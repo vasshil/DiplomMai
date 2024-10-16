@@ -13,6 +13,8 @@ data class Graph3D(
 
     fun add(edge: Edge) {
         edges.add(edge)
+        edge.vertex1.edges.add(edge)
+        edge.vertex2.edges.add(edge)
     }
 
     fun add(vector: Vector3f) {
