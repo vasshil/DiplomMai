@@ -12,6 +12,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.jme3.math.Vector3f
 import core.distanceBetween
 import core.findShortestPathDijkstra
+import core.pathLength
 import model.City
 import model.graph.Vertex
 
@@ -34,8 +35,8 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
                     // Переводим координаты клика в координаты графа с учетом смещения и масштаба
                     val clickedPosition = Vector3f(
                         (tapOffset.x - offset) / scale,
+                        10f,
                         (tapOffset.y - offset) / scale,
-                        0f
                     )
 
                     // Определяем ближайшую вершину к месту клика
@@ -50,6 +51,8 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
                             selectedVertex2 = vertex
                             // Находим кратчайший путь между двумя вершинами
                             shortestPath = findShortestPathDijkstra(selectedVertex1!!, selectedVertex2!!)
+                            val len = pathLength(shortestPath)
+                            println("Длина пути ${len} м, потраченный заряд: ${len / 10}%")
                         } else {
                             // Сбрасываем выбор, если кликнули еще раз (начать с начала)
                             selectedVertex1 = null
@@ -101,7 +104,7 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
             val endY = edge.vertex2.position.z * scale + offset
 
             drawLine(
-                color = Color.Green,
+                color = Color.Blue,
                 start = Offset(startX, startY),
                 end = Offset(endX, endY),
                 strokeWidth = 2f
@@ -114,7 +117,7 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
             val y = vertex.position.z * scale + offset
 
             drawCircle(
-                color = Color.Red,
+                color = Color.Black,
                 radius = 6f,
                 center = Offset(x, y)
             )
@@ -122,20 +125,44 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
 
         // Рисуем кратчайший путь, если он есть
         if (shortestPath.isNotEmpty()) {
+            println(shortestPath)
             shortestPath.zipWithNext { v1, v2 ->
                 val startX = v1.position.x * scale + offset
-                val startY = v1.position.y * scale + offset
+                val startY = v1.position.z * scale + offset
                 val endX = v2.position.x * scale + offset
-                val endY = v2.position.y * scale + offset
+                val endY = v2.position.z * scale + offset
 
                 drawLine(
-                    color = Color.Green,
+                    color = Color.Red,
                     start = Offset(startX, startY),
                     end = Offset(endX, endY),
-                    strokeWidth = 2f
+                    strokeWidth = 4f
                 )
             }
         }
+
+        selectedVertex1?.let {
+            val x = it.position.x * scale + offset
+            val y = it.position.z * scale + offset
+
+            drawCircle(
+                color = Color.Red,
+                radius = 9f,
+                center = Offset(x, y)
+            )
+        }
+
+        selectedVertex2?.let {
+            val x = it.position.x * scale + offset
+            val y = it.position.z * scale + offset
+
+            drawCircle(
+                color = Color.Red,
+                radius = 9f,
+                center = Offset(x, y)
+            )
+        }
+
     }
 
 }

@@ -24,6 +24,10 @@ fun findShortestPathDijkstra(start: Vertex, end: Vertex): List<Vertex> {
         // Получаем вершину с наименьшим расстоянием
         val (currentVertex, currentDistance) = queue.poll()
 
+        if (currentDistance > distances[currentVertex]!!) {
+            continue
+        }
+
         // Если достигли конечной вершины, то восстанавливаем путь
         if (currentVertex == end) {
             val path = mutableListOf<Vertex>()
@@ -53,6 +57,30 @@ fun findShortestPathDijkstra(start: Vertex, end: Vertex): List<Vertex> {
     return emptyList()
 }
 
+
+
+//def dijkstra(graph, start):
+//    distances = {vertex: float('infinity') for vertex in graph}
+//    distances[start] = 0
+//    queue = [(0, start)]
+//
+//    while queue:
+//        current_distance, current_vertex = heapq.heappop(queue)
+//
+//        # Обрабатываем только вершину с наименьшим расстоянием
+//        if current_distance > distances[current_vertex]:
+//            continue
+//
+//        for neighbor, weight in graph[current_vertex].items():
+//            distance = current_distance + weight
+//
+//            # Рассматриваем этот новый путь только в том случае, если он лучше любого пути, который мы нашли до сих пор
+//            if distance < distances[neighbor]:
+//                distances[neighbor] = distance
+//                heapq.heappush(queue, (distance, neighbor))
+//
+//    return distances
+
 // Функция для вычисления Евклидова расстояния между двумя вершинами
 fun distanceBetween(vertex1: Vertex, vertex2: Vertex): Float {
     val dx = vertex1.position.x - vertex2.position.x
@@ -66,4 +94,12 @@ fun distanceBetween(pos1: Vector3f, pos2: Vector3f): Float {
     val dy = pos1.y - pos2.y
     val dz = pos1.z - pos2.z
     return sqrt(dx * dx + dy * dy + dz * dz)
+}
+
+fun pathLength(path: List<Vertex>): Float {
+    var length = 0f
+    for (i in 0 until path.size - 1) {
+        length += distanceBetween(path[i], path[i + 1])
+    }
+    return length
 }
