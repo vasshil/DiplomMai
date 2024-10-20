@@ -2,14 +2,11 @@ package ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -18,15 +15,25 @@ import com.jme3.math.Vector3f
 import model.City
 import model.graph.Edge
 import model.graph.Graph3D
+import model.graph.Vertex
 import model.landscape.Building
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.Polygon
 import ui.compose.Scheme2D
 
 @Composable
 @Preview
 fun App() {
 
+    val buildings by remember {
+        mutableStateOf(createBuildings())
+    }
+
+
     MaterialTheme {
-        Scheme2D(modifier = Modifier.size(width = 600.dp, height = 500.dp), City(createBuildings(), createGraph()))
+        Scheme2D(modifier = Modifier.size(width = 600.dp, height = 500.dp), City(buildings, createGraphAtHeight(buildings, 20f)))
     }
 
 }
@@ -38,99 +45,116 @@ fun main() = application {
 }
 
 
-fun createBuildings(): List<Building> {
-    val buildings = mutableListOf<Building>()
-    buildings.add(Building(Vector3f(0f, 0f, 0f), Vector3f(2f, 5f, 2f)))
-    buildings.add(Building(Vector3f(4f, 0f, 0f), Vector3f(3f, 5f, 1f)))
-    buildings.add(Building(Vector3f(8f, 0f, 0f), Vector3f(1f, 4f, 3f)))
-    buildings.add(Building(Vector3f(0f, 0f, 3f), Vector3f(3f, 3f, 1f)))
-    buildings.add(Building(Vector3f(5f, 0f, 2f), Vector3f(2f, 3f, 3f)))
-    buildings.add(Building(Vector3f(8f, 0f, 4f), Vector3f(1f, 2f, 1f)))
-    buildings.add(Building(Vector3f(0f, 0f, 5f), Vector3f(4f, 1f, 1f)))
+fun createBuildings(): MutableList<Building> {
+    val buildings = mutableListOf<Building>(
+        // Треугольное здание
+        Building(
+            id = 0,
+            groundCoords = arrayOf(
+                Vector3f(10f, 0f, 10f),
+                Vector3f(20f, 0f, 10f),
+                Vector3f(15f, 0f, 20f)
+            ),
+            height = 15f
+        ),
+        // Здание в виде буквы "Г"
+        Building(
+            id = 1,
+            groundCoords = arrayOf(
+                Vector3f(30f, 0f, 30f),
+                Vector3f(40f, 0f, 30f),
+                Vector3f(40f, 0f, 35f),
+                Vector3f(35f, 0f, 35f),
+                Vector3f(35f, 0f, 40f),
+                Vector3f(30f, 0f, 40f)
+            ),
+            height = 20f
+        ),
+        // Прямоугольное здание 1
+        Building(
+            id = 2,
+            groundCoords = arrayOf(
+                Vector3f(50f, 0f, 50f),
+                Vector3f(60f, 0f, 50f),
+                Vector3f(60f, 0f, 60f),
+                Vector3f(50f, 0f, 60f)
+            ),
+            height = 25f
+        ),
+        // Прямоугольное здание 2
+        Building(
+            id = 3,
+            groundCoords = arrayOf(
+                Vector3f(70f, 0f, 70f),
+                Vector3f(85f, 0f, 70f),
+                Vector3f(85f, 0f, 80f),
+                Vector3f(70f, 0f, 80f)
+            ),
+            height = 30f
+        ),
+        // Прямоугольное здание 3
+        Building(
+            id = 4,
+            groundCoords = arrayOf(
+                Vector3f(90f, 0f, 10f),
+                Vector3f(100f, 0f, 10f),
+                Vector3f(100f, 0f, 20f),
+                Vector3f(90f, 0f, 20f)
+            ),
+            height = 10f
+        )
+    )
 
     return buildings
 }
 
-fun createGraph(): Graph3D {
-    val SD = 1f
-    val HGT = 10f
+fun createGraphAtHeight(buildings: List<Building>, height: Float): Graph3D {
     val graph = Graph3D()
-    graph.add(Vector3f(-SD, HGT, -SD))
-    graph.add(Vector3f(20 + SD, HGT, -SD))
-    graph.add(Vector3f(40 - SD, HGT, -SD))
-    graph.add(Vector3f(70 + SD, HGT, -SD))
-    graph.add(Vector3f(80 - SD, HGT, -SD))
-    graph.add(Vector3f(90 + SD, HGT, -SD))
-    graph.add(Vector3f(90 + SD, HGT, 30 + SD))
-    graph.add(Vector3f(90 + SD, HGT, 40 - SD))
-    graph.add(Vector3f(90 + SD, HGT, 50 + SD))
-    graph.add(Vector3f(80 - SD, HGT, 50 + SD))
-    graph.add(Vector3f(70 + SD, HGT, 50 + SD))
-    graph.add(Vector3f(50 - SD, HGT, 50 + SD))
-    graph.add(Vector3f(40 + SD, HGT, 50 + SD))
-    graph.add(Vector3f(40 + SD, HGT, 60 + SD))
-    graph.add(Vector3f(-SD, HGT, 60 + SD))
-    graph.add(Vector3f(-SD, HGT, 50 - SD))
-    graph.add(Vector3f(-SD, HGT, 40 + SD))
-    graph.add(Vector3f(-SD, HGT, 30 - SD))
-    graph.add(Vector3f(-SD, HGT, 20 + SD))
-//        graph.add(Vector3f(f, HGT, f))
 
-    for (i in 0 until graph.vertices.size - 1) {
-        graph.add(Edge(graph.vertices[i], graph.vertices[i + 1]))
+    val buildingsGeometry = mutableListOf<Polygon>()
+
+    for (building in buildings) {
+        val keyNodes = building.getKeyNodes(height)
+        if (keyNodes.isEmpty()) continue
+
+        buildingsGeometry.add(Building(0, keyNodes.toTypedArray(), 0f).toJTSPolygon())
+
+        keyNodes.forEach {
+            graph.add(building.id, it)
+        }
+
+        for (i in 0 until keyNodes.size - 1) {
+            graph.add(Edge(keyNodes[i], keyNodes[i + 1]))
+        }
+        graph.add(Edge(keyNodes.first(), keyNodes.last()))
+
     }
-    graph.add(Edge(graph.vertices.last(), graph.vertices.first()))
 
+    for (vertex1i in graph.vertices.indices) {
+        for (vertex2i in vertex1i until graph.vertices.size) {
+            val vertex1 = graph.vertices[vertex1i]
+            val vertex2 = graph.vertices[vertex2i]
+            if (vertex1.buildingId != vertex2.buildingId) {
 
-    graph.add(Vector3f(20 + SD, HGT, 20 + SD)) // 19
-    graph.add(Vector3f(40 - SD, HGT, 10 + SD)) // 20
-    graph.add(Vector3f(70 + SD, HGT, 10 + SD)) // 21
-    graph.add(Vector3f(70 + SD, HGT, 20 - SD)) // 22
-    graph.add(Vector3f(80 - SD, HGT, 30 + SD)) // 23
-    graph.add(Vector3f(80 - SD, HGT, 40 - SD)) // 24
-    graph.add(Vector3f(50 - SD, HGT, 20 - SD)) // 25
-    graph.add(Vector3f(30 + SD, HGT, 30 - SD)) // 26
-    graph.add(Vector3f(30 + SD, HGT, 40 + SD)) // 27
-    graph.add(Vector3f(40 + SD, HGT, 50 - SD)) // 28
-    graph.add(Vector3f(40 - SD, HGT, 50 - SD)) // 29
-//        graph.add(Vector3f(, HGT, )) // 3
+                val edge = GeometryFactory().createLineString(arrayOf(vertex1.toJTSCoordinate(), vertex2.toJTSCoordinate()))
 
-    graph.add(Edge(graph.vertices[1], graph.vertices[19]))
-    graph.add(Edge(graph.vertices[1], graph.vertices[20]))
-    graph.add(Edge(graph.vertices[2], graph.vertices[20]))
-    graph.add(Edge(graph.vertices[3], graph.vertices[21]))
-    graph.add(Edge(graph.vertices[3], graph.vertices[23]))
-    graph.add(Edge(graph.vertices[4], graph.vertices[23]))
-    graph.add(Edge(graph.vertices[6], graph.vertices[23]))
-    graph.add(Edge(graph.vertices[6], graph.vertices[24]))
-    graph.add(Edge(graph.vertices[7], graph.vertices[24]))
-    graph.add(Edge(graph.vertices[7], graph.vertices[23]))
-    graph.add(Edge(graph.vertices[9], graph.vertices[24]))
-    graph.add(Edge(graph.vertices[10], graph.vertices[22]))
-    graph.add(Edge(graph.vertices[11], graph.vertices[25]))
-    graph.add(Edge(graph.vertices[12], graph.vertices[28]))
-    graph.add(Edge(graph.vertices[15], graph.vertices[29]))
-    graph.add(Edge(graph.vertices[16], graph.vertices[27]))
-    graph.add(Edge(graph.vertices[17], graph.vertices[26]))
-    graph.add(Edge(graph.vertices[18], graph.vertices[19]))
-    graph.add(Edge(graph.vertices[19], graph.vertices[25]))
-    graph.add(Edge(graph.vertices[19], graph.vertices[26]))
-    graph.add(Edge(graph.vertices[20], graph.vertices[19]))
-    graph.add(Edge(graph.vertices[20], graph.vertices[25]))
-    graph.add(Edge(graph.vertices[20], graph.vertices[26]))
-    graph.add(Edge(graph.vertices[20], graph.vertices[21]))
-    graph.add(Edge(graph.vertices[20], graph.vertices[29]))
-    graph.add(Edge(graph.vertices[21], graph.vertices[22]))
-    graph.add(Edge(graph.vertices[22], graph.vertices[25]))
-    graph.add(Edge(graph.vertices[22], graph.vertices[23]))
-    graph.add(Edge(graph.vertices[23], graph.vertices[24]))
-    graph.add(Edge(graph.vertices[25], graph.vertices[26]))
-    graph.add(Edge(graph.vertices[25], graph.vertices[28]))
-    graph.add(Edge(graph.vertices[26], graph.vertices[27]))
-    graph.add(Edge(graph.vertices[27], graph.vertices[29]))
-    graph.add(Edge(graph.vertices[28], graph.vertices[29]))
-//        graph.add(Edge(graph.vertices[], graph.vertices[]))
+                if (!checkEdgeBuildingsIntersection(edge, buildingsGeometry)) {
+                    graph.add(Edge(vertex1, vertex2))
+                }
 
+            }
+        }
+    }
 
     return graph
+}
+
+fun checkEdgeBuildingsIntersection(edge: LineString, buildings: List<Polygon>): Boolean {
+    for (building in buildings) {
+        println(building.intersection(edge).coordinates.contentToString())
+        if (building.intersection(edge).coordinates.size > 1) {
+            return true
+        }
+    }
+    return false
 }

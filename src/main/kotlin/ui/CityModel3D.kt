@@ -49,12 +49,12 @@ class City1 : SimpleApplication() {
 
         // Создаем несколько параллелепипедов (зданий) полупрозрачного голубого цвета
         val buildings = createBuildings()
-        buildings.forEach {
-            displayBuilding(it)
-        }
+//        buildings.forEach {
+//            displayBuilding(it)
+//        }
 
-        val graph = createGraph()
-        displayGraph(graph)
+//        val graph = createGraph(buildings)
+//        displayGraph(graph)
 
 
         // Добавляем направленный свет для освещения сцены
@@ -84,27 +84,27 @@ class City1 : SimpleApplication() {
     }
 
 
-    private fun displayBuilding(b: Building) {
-        val baseSize = 10f//m
-        val box = Box(
-            b.size.x / 2 * baseSize,
-            b.size.y / 2 * baseSize,
-            b.size.z / 2 * baseSize
-        )
-        val building = Geometry("Building", box)
-        val mat = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
-        mat.setBoolean("UseMaterialColors", true)
-        mat.setColor("Diffuse", ColorRGBA(0.5f, 0.7f, 1.0f, 0.1f)) // Основной цвет с легкой
-        mat.setColor("Specular", ColorRGBA(0.5f, 0.7f, 1.0f, 0.1f)) // Белый цвет для отраженных бликов
-        mat.setFloat("Shininess", 10f) // Значение блеска поверхности
-        building.material = mat
-        building.shadowMode = RenderQueue.ShadowMode.CastAndReceive
-        building.localTranslation = b.position
-            .multLocal(baseSize)
-            .addLocal(Vector3f(b.size.x / 2 * baseSize, b.size.y / 2 * baseSize, b.size.z / 2 * baseSize))
-        building.queueBucket = RenderQueue.Bucket.Transparent
-        rootNode.attachChild(building)
-    }
+//    private fun displayBuilding(b: Building) {
+//        val baseSize = 10f//m
+//        val box = Box(
+//            b.size.x / 2 * baseSize,
+//            b.size.y / 2 * baseSize,
+//            b.size.z / 2 * baseSize
+//        )
+//        val building = Geometry("Building", box)
+//        val mat = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
+//        mat.setBoolean("UseMaterialColors", true)
+//        mat.setColor("Diffuse", ColorRGBA(0.5f, 0.7f, 1.0f, 0.1f)) // Основной цвет с легкой
+//        mat.setColor("Specular", ColorRGBA(0.5f, 0.7f, 1.0f, 0.1f)) // Белый цвет для отраженных бликов
+//        mat.setFloat("Shininess", 10f) // Значение блеска поверхности
+//        building.material = mat
+//        building.shadowMode = RenderQueue.ShadowMode.CastAndReceive
+//        building.localTranslation = b.position
+//            .multLocal(baseSize)
+//            .addLocal(Vector3f(b.size.x / 2 * baseSize, b.size.y / 2 * baseSize, b.size.z / 2 * baseSize))
+//        building.queueBucket = RenderQueue.Bucket.Transparent
+//        rootNode.attachChild(building)
+//    }
 
     private fun displayGraph(graph: Graph3D) {
         // Добавляем вершины (в виде сфер) и ребра (в виде линий) в сцену

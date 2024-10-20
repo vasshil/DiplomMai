@@ -7,7 +7,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawStyle
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.input.pointer.pointerInput
 import com.jme3.math.Vector3f
 import core.distanceBetween
@@ -83,17 +87,37 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
 
         // Рисуем здания
         city.buildings.forEach { building ->
-            val left = building.position.x * scale * 10 + offset
-            val top = building.position.z * scale * 10 + offset
-            val width = building.size.x * scale * 10
-            val height = building.size.z * scale * 10
 
-            drawRoundRect(
+            val path = Path().apply {
+                this.moveTo(building.groundCoords.first().x * scale + offset, building.groundCoords.first().z * scale + offset)
+                building.groundCoords.forEach { coordinate ->
+                    lineTo(
+                        coordinate.x * scale + offset,
+                        coordinate.z * scale + offset
+                    )
+                }
+            }
+
+
+
+            drawPath(
+                path = path,
                 color = Color.Blue,
-                topLeft = Offset(left, top),
-                size = androidx.compose.ui.geometry.Size(width, height),
-                cornerRadius = CornerRadius(4f, 4f)
+                style = Fill
             )
+
+//
+//            val left = building.position.x * scale * 10 + offset
+//            val top = building.position.z * scale * 10 + offset
+//            val width = building.size.x * scale * 10
+//            val height = building.size.z * scale * 10
+//
+//            drawRoundRect(
+//                color = Color.Blue,
+//                topLeft = Offset(left, top),
+//                size = androidx.compose.ui.geometry.Size(width, height),
+//                cornerRadius = CornerRadius(4f, 4f)
+//            )
         }
 
         // Рисуем ребра графа

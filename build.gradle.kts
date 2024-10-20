@@ -33,6 +33,8 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
 
+
+    // 3d graphics
     val jmonkeyengineVersion = "3.6.1-stable"
     implementation("org.jmonkeyengine:jme3-core:$jmonkeyengineVersion")
     implementation("org.jmonkeyengine:jme3-desktop:$jmonkeyengineVersion")
@@ -42,7 +44,9 @@ dependencies {
     implementation("org.jmonkeyengine:jme3-jbullet:$jmonkeyengineVersion")
     runtimeOnly("org.jmonkeyengine:jme3-lwjgl3:$jmonkeyengineVersion")
 
-//    implementation("wf.frk:jme-igui:0.1.2")
+
+    // geometry
+    implementation("org.locationtech.jts:jts-core:1.20.0")
 }
 
 compose.desktop {

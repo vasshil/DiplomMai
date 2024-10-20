@@ -7,7 +7,7 @@ data class Graph3D(
     val edges: MutableList<Edge> = mutableListOf(),
 ) {
 
-    fun add(vertex: Vertex) {
+    fun add(buildingId: Long, vertex: Vertex) {
         vertices.add(vertex)
     }
 
@@ -17,8 +17,8 @@ data class Graph3D(
         edge.vertex2.edges.add(edge)
     }
 
-    fun add(vector: Vector3f) {
-        vertices.add(Vertex(vector))
+    fun add(buildingId: Long, vector: Vector3f) {
+        vertices.add(Vertex(buildingId, vector))
     }
 
 }
