@@ -15,13 +15,11 @@ import com.jme3.math.Vector3f
 import model.City
 import model.graph.Edge
 import model.graph.Graph3D
-import model.graph.Vertex
 import model.landscape.Building
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Polygon
-import ui.compose.Scheme2D
+import ui.compose.common.Scheme2D
 
 @Composable
 @Preview
@@ -33,7 +31,10 @@ fun App() {
 
 
     MaterialTheme {
-        Scheme2D(modifier = Modifier.size(width = 600.dp, height = 500.dp), City(buildings, createGraphAtHeight(buildings, 20f)))
+        Scheme2D(
+            modifier = Modifier.size(width = 600.dp, height = 500.dp),
+            city = City(buildings, createGraphAtHeight(buildings, 0f))
+        )
     }
 
 }
@@ -50,7 +51,7 @@ fun createBuildings(): MutableList<Building> {
         // Треугольное здание
         Building(
             id = 0,
-            groundCoords = arrayOf(
+            groundCoords = mutableListOf(
                 Vector3f(10f, 0f, 10f),
                 Vector3f(20f, 0f, 10f),
                 Vector3f(15f, 0f, 20f)
@@ -60,7 +61,7 @@ fun createBuildings(): MutableList<Building> {
         // Здание в виде буквы "Г"
         Building(
             id = 1,
-            groundCoords = arrayOf(
+            groundCoords = mutableListOf(
                 Vector3f(30f, 0f, 30f),
                 Vector3f(40f, 0f, 30f),
                 Vector3f(40f, 0f, 35f),
@@ -73,7 +74,7 @@ fun createBuildings(): MutableList<Building> {
         // Прямоугольное здание 1
         Building(
             id = 2,
-            groundCoords = arrayOf(
+            groundCoords = mutableListOf(
                 Vector3f(50f, 0f, 50f),
                 Vector3f(60f, 0f, 50f),
                 Vector3f(60f, 0f, 60f),
@@ -84,7 +85,7 @@ fun createBuildings(): MutableList<Building> {
         // Прямоугольное здание 2
         Building(
             id = 3,
-            groundCoords = arrayOf(
+            groundCoords = mutableListOf(
                 Vector3f(70f, 0f, 70f),
                 Vector3f(85f, 0f, 70f),
                 Vector3f(85f, 0f, 80f),
@@ -95,7 +96,7 @@ fun createBuildings(): MutableList<Building> {
         // Прямоугольное здание 3
         Building(
             id = 4,
-            groundCoords = arrayOf(
+            groundCoords = mutableListOf(
                 Vector3f(90f, 0f, 10f),
                 Vector3f(100f, 0f, 10f),
                 Vector3f(100f, 0f, 20f),
@@ -117,7 +118,7 @@ fun createGraphAtHeight(buildings: List<Building>, height: Float): Graph3D {
         val keyNodes = building.getKeyNodes(height)
         if (keyNodes.isEmpty()) continue
 
-        buildingsGeometry.add(Building(0, keyNodes.toTypedArray(), 0f).toJTSPolygon())
+        buildingsGeometry.add(Building(0, keyNodes.map { it.position }.toMutableList(), 0f).toJTSPolygon())
 
         keyNodes.forEach {
             graph.add(building.id, it)

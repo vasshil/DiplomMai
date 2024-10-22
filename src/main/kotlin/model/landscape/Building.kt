@@ -17,33 +17,18 @@ import org.locationtech.jts.operation.buffer.BufferParameters.JOIN_MITRE
 
 data class Building(
     val id: Long,
-    val groundCoords: Array<Vector3f>,
-    val height: Float
+    val groundCoords: MutableList<Vector3f> = mutableListOf(),
+    val height: Float = 0f
 ) {
 
     companion object {
         const val safeDistance = 1f
     }
 
-    constructor(id: Long, groundCoords: Array<Vertex>, height: Float) : this(id, groundCoords.map { it.position }.toTypedArray(), height)
+//    constructor(id: Long, groundCoords: MutableList<Vertex>, height: Float) : this(id, groundCoords.map { it.position }.toMutableList(), height)
 
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Building
-
-        if (!groundCoords.contentEquals(other.groundCoords)) return false
-        if (height != other.height) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = groundCoords.contentHashCode()
-        result = 31 * result + height.hashCode()
-        return result
+    fun addGroundPoint(x: Float, z: Float) {
+        groundCoords.add(Vector3f(x, 0f, z))
     }
 
     fun toJTSPolygon(): Polygon {

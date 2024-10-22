@@ -1,17 +1,16 @@
-package ui.compose
+package ui.compose.common
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import com.jme3.math.Vector3f
 import core.distanceBetween
@@ -19,9 +18,20 @@ import core.findShortestPathDijkstra
 import core.pathLength
 import model.City
 import model.graph.Vertex
+import kotlin.math.roundToInt
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun Scheme2D(modifier: Modifier = Modifier, city: City) {
+fun Scheme2D(
+    modifier: Modifier = Modifier,
+    city: City,
+    editorMode: Boolean = false,
+    onClick: (() -> Unit) = {},
+    onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
+) {
+
+    var mouseCoordinate by remember { mutableStateOf(Offset.Zero) }
+
     val scale = 10f // Масштаб для перевода координат в пиксели
     val gridStep = 10 * scale // Шаг сетки
     val offset = gridStep // Смещение в одну клетку в левом верхнем углу
@@ -32,10 +42,14 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
     var shortestPath by remember { mutableStateOf<List<Vertex>>(emptyList()) }
 
     Canvas(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
             .pointerInput(Unit) {
                 detectTapGestures { tapOffset ->
+
+                    onClick()
+
+                    if (editorMode) return@detectTapGestures
+
                     // Переводим координаты клика в координаты графа с учетом смещения и масштаба
                     val clickedPosition = Vector3f(
                         (tapOffset.x - offset) / scale,
@@ -66,11 +80,17 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
                     }
                 }
             }
+            .onPointerEvent(PointerEventType.Move) { event ->
+                val x = ((event.changes.first().position.x - offset) / scale).roundToInt()
+                val y = ((event.changes.first().position.y - offset) / scale).roundToInt()
+                onMouseAction(Offset(x.toFloat(), y.toFloat()), event.changes.first().pressed)
+                mouseCoordinate = Offset(x * scale + offset, y * scale + offset)
+            }
     ) {
         // Рисуем сетку
         for (x in 0..size.width.toInt() step gridStep.toInt()) {
             drawLine(
-                color = Color.Gray,
+                color = MESH_COLOR,
                 start = Offset(x.toFloat(), 0f),
                 end = Offset(x.toFloat(), size.height),
                 strokeWidth = 1f
@@ -78,7 +98,7 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
         }
         for (y in 0..size.height.toInt() step gridStep.toInt()) {
             drawLine(
-                color = Color.Gray,
+                color = MESH_COLOR,
                 start = Offset(0f, y.toFloat()),
                 end = Offset(size.width, y.toFloat()),
                 strokeWidth = 1f
@@ -98,26 +118,12 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
                 }
             }
 
-
-
             drawPath(
                 path = path,
-                color = Color.Blue,
+                color = BUILDING_COLOR,
                 style = Fill
             )
 
-//
-//            val left = building.position.x * scale * 10 + offset
-//            val top = building.position.z * scale * 10 + offset
-//            val width = building.size.x * scale * 10
-//            val height = building.size.z * scale * 10
-//
-//            drawRoundRect(
-//                color = Color.Blue,
-//                topLeft = Offset(left, top),
-//                size = androidx.compose.ui.geometry.Size(width, height),
-//                cornerRadius = CornerRadius(4f, 4f)
-//            )
         }
 
         // Рисуем ребра графа
@@ -128,7 +134,7 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
             val endY = edge.vertex2.position.z * scale + offset
 
             drawLine(
-                color = Color.Blue,
+                color = EDGE_COLOR,
                 start = Offset(startX, startY),
                 end = Offset(endX, endY),
                 strokeWidth = 2f
@@ -141,52 +147,59 @@ fun Scheme2D(modifier: Modifier = Modifier, city: City) {
             val y = vertex.position.z * scale + offset
 
             drawCircle(
-                color = Color.Black,
+                color = KEY_POINT_COLOR,
                 radius = 6f,
                 center = Offset(x, y)
             )
         }
 
-        // Рисуем кратчайший путь, если он есть
-        if (shortestPath.isNotEmpty()) {
-            println(shortestPath)
-            shortestPath.zipWithNext { v1, v2 ->
-                val startX = v1.position.x * scale + offset
-                val startY = v1.position.z * scale + offset
-                val endX = v2.position.x * scale + offset
-                val endY = v2.position.z * scale + offset
+        if (editorMode) {
+            // место курсора
+            drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x - 10, mouseCoordinate.y), Offset(mouseCoordinate.x + 10, mouseCoordinate.y), 1f)
+            drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x, mouseCoordinate.y - 10), Offset(mouseCoordinate.x, mouseCoordinate.y + 10), 1f)
+        } else {
 
-                drawLine(
-                    color = Color.Red,
-                    start = Offset(startX, startY),
-                    end = Offset(endX, endY),
-                    strokeWidth = 4f
+            // Рисуем кратчайший путь, если он есть
+            if (shortestPath.isNotEmpty()) {
+                println(shortestPath)
+                shortestPath.zipWithNext { v1, v2 ->
+                    val startX = v1.position.x * scale + offset
+                    val startY = v1.position.z * scale + offset
+                    val endX = v2.position.x * scale + offset
+                    val endY = v2.position.z * scale + offset
+
+                    drawLine(
+                        color = SHORTEST_PATH_COLOR,
+                        start = Offset(startX, startY),
+                        end = Offset(endX, endY),
+                        strokeWidth = 4f
+                    )
+                }
+            }
+
+            selectedVertex1?.let {
+                val x = it.position.x * scale + offset
+                val y = it.position.z * scale + offset
+
+                drawCircle(
+                    color = BASE_STATION_COLOR,
+                    radius = 9f,
+                    center = Offset(x, y)
                 )
             }
+
+            selectedVertex2?.let {
+                val x = it.position.x * scale + offset
+                val y = it.position.z * scale + offset
+
+                drawCircle(
+                    color = DESTINATION_COLOR,
+                    radius = 9f,
+                    center = Offset(x, y)
+                )
+            }
+
         }
-
-        selectedVertex1?.let {
-            val x = it.position.x * scale + offset
-            val y = it.position.z * scale + offset
-
-            drawCircle(
-                color = Color.Red,
-                radius = 9f,
-                center = Offset(x, y)
-            )
-        }
-
-        selectedVertex2?.let {
-            val x = it.position.x * scale + offset
-            val y = it.position.z * scale + offset
-
-            drawCircle(
-                color = Color.Red,
-                radius = 9f,
-                center = Offset(x, y)
-            )
-        }
-
     }
 
 }
