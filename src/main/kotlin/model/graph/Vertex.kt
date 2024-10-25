@@ -6,10 +6,12 @@ import org.locationtech.jts.geom.Coordinate
 data class Vertex(
     val buildingId: Long,
     val position: Vector3f,
-    val edges: MutableList<Edge> = mutableListOf()
+    val edges: MutableList<Edge> = mutableListOf(),
+    var isBaseStation: Boolean = false,
+    var isDestination: Boolean = false,
 ) {
 
-    constructor( buildingId: Long, x: Float, y: Float, z: Float) : this(buildingId, Vector3f(x, y, z))
+    constructor(buildingId: Long, x: Float, y: Float, z: Float) : this(buildingId, Vector3f(x, y, z))
 
     override fun hashCode(): Int {
         return position.hashCode()

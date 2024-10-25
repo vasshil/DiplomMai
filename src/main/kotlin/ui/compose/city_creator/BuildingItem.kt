@@ -2,9 +2,11 @@ package ui.compose.city_creator
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -15,7 +17,11 @@ import model.landscape.Building
 import ui.compose.common.BUILDING_COLOR
 
 @Composable
-fun BuildingItem(modifier: Modifier = Modifier, building: Building) {
+fun BuildingItem(
+    modifier: Modifier = Modifier,
+    building: Building,
+    onFinished: () -> Unit,
+) {
 
     Column(
         modifier = modifier,
@@ -24,7 +30,11 @@ fun BuildingItem(modifier: Modifier = Modifier, building: Building) {
             modifier = Modifier,
         ) {
 
-            BuildingPreview(building)
+            Box(
+                modifier = Modifier.size(96.dp)
+            ) {
+                BuildingPreview(Modifier.align(Alignment.Center), building)
+            }
 
             Column {
                 Text(
@@ -33,8 +43,18 @@ fun BuildingItem(modifier: Modifier = Modifier, building: Building) {
                 )
                 Text(
                     modifier = Modifier.padding(start = 5.dp),
-                    text = "${building.groundCoords.size} точек"
+                    text = "Точек: ${building.groundCoords.size}"
                 )
+                if (building.groundCoords.first() != building.groundCoords.last()) {
+                    Button(
+                        modifier = Modifier.padding(start = 5.dp),
+                        onClick = {
+                            onFinished()
+                        }) {
+                        Text("Готово")
+                    }
+                }
+
             }
 
         }
@@ -46,7 +66,7 @@ fun BuildingItem(modifier: Modifier = Modifier, building: Building) {
 
 }
 @Composable
-private fun BuildingPreview(building: Building) {
+private fun BuildingPreview(modifier: Modifier, building: Building) {
 
     if (building.groundCoords.isEmpty()) return
 
@@ -76,20 +96,24 @@ private fun BuildingPreview(building: Building) {
 
     var scaledPoints by remember { mutableStateOf(mutableListOf<Offset>()) }
 
-    val canvasSizeDp = 96.dp
+    val baseSize = 72f
+    val canvasSizeDp by derivedStateOf {
+        if (buildingWidth > buildingHeight) Offset(baseSize, baseSize * buildingHeight / buildingWidth)
+        else Offset(baseSize * buildingWidth / buildingHeight, baseSize)
+    }
 
     Canvas(
-        modifier = Modifier.size(canvasSizeDp).padding(10.dp)
+        modifier = modifier.size(width = canvasSizeDp.x.dp, canvasSizeDp.y.dp)//.padding(10.dp)
     ) {
         scaledPoints = building.groundCoords.map {
             Offset(
-                it.x / buildingWidth * canvasSizeDp.toPx(),
-                it.z / buildingHeight * canvasSizeDp.toPx()
+                (it.x - minX) / buildingWidth * canvasSizeDp.x.dp.toPx(),
+                (it.z - minY) / buildingHeight * canvasSizeDp.y.dp.toPx()
             )
         }.toMutableList()
 
         if (scaledPoints.isEmpty()) return@Canvas
-        println(building.groundCoords.toTypedArray().contentToString() + " ${canvasSizeDp.toPx()} ${scaledPoints.toTypedArray().contentToString()}")
+//        println(building.groundCoords.toTypedArray().contentToString() + " ${canvasSizeDp.toPx()} ${scaledPoints.toTypedArray().contentToString()}")
 
         val path = Path().apply {
             this.moveTo(scaledPoints.first().x, scaledPoints.first().y)

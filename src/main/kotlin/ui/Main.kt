@@ -33,7 +33,7 @@ fun App() {
     MaterialTheme {
         Scheme2D(
             modifier = Modifier.size(width = 600.dp, height = 500.dp),
-            city = City(buildings, createGraphAtHeight(buildings, 0f))
+            city = City(buildings).apply { createGraphAtHeight() }
         )
     }
 
@@ -107,55 +107,4 @@ fun createBuildings(): MutableList<Building> {
     )
 
     return buildings
-}
-
-fun createGraphAtHeight(buildings: List<Building>, height: Float): Graph3D {
-    val graph = Graph3D()
-
-    val buildingsGeometry = mutableListOf<Polygon>()
-
-    for (building in buildings) {
-        val keyNodes = building.getKeyNodes(height)
-        if (keyNodes.isEmpty()) continue
-
-        buildingsGeometry.add(Building(0, keyNodes.map { it.position }.toMutableList(), 0f).toJTSPolygon())
-
-        keyNodes.forEach {
-            graph.add(building.id, it)
-        }
-
-        for (i in 0 until keyNodes.size - 1) {
-            graph.add(Edge(keyNodes[i], keyNodes[i + 1]))
-        }
-        graph.add(Edge(keyNodes.first(), keyNodes.last()))
-
-    }
-
-    for (vertex1i in graph.vertices.indices) {
-        for (vertex2i in vertex1i until graph.vertices.size) {
-            val vertex1 = graph.vertices[vertex1i]
-            val vertex2 = graph.vertices[vertex2i]
-            if (vertex1.buildingId != vertex2.buildingId) {
-
-                val edge = GeometryFactory().createLineString(arrayOf(vertex1.toJTSCoordinate(), vertex2.toJTSCoordinate()))
-
-                if (!checkEdgeBuildingsIntersection(edge, buildingsGeometry)) {
-                    graph.add(Edge(vertex1, vertex2))
-                }
-
-            }
-        }
-    }
-
-    return graph
-}
-
-fun checkEdgeBuildingsIntersection(edge: LineString, buildings: List<Polygon>): Boolean {
-    for (building in buildings) {
-        println(building.intersection(edge).coordinates.contentToString())
-        if (building.intersection(edge).coordinates.size > 1) {
-            return true
-        }
-    }
-    return false
 }

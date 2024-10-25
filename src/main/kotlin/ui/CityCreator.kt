@@ -64,19 +64,35 @@ fun CityCreator() {
                     modifier = Modifier.width(width = 600.dp).weight(1f).fillMaxHeight(),
                     city = city,
                     editorMode = true,
+                    drawBaseGraph = true,
                     onClick = {
                         when (editorMode) {
                             CityCreatorMode.ADD_BUILDING -> {
                                 if (newBuilding == null) {
                                     newBuilding = city.newBuilding()
                                 }
-                                if (newBuilding?.groundCoords?.isNotEmpty() == true && newBuilding?.groundCoords?.first()?.x == mousePosition.x && newBuilding?.groundCoords?.first()?.z == mousePosition.y) {
+                                if (newBuilding?.groundCoords?.isNotEmpty() == true &&
+                                    newBuilding?.groundCoords?.first()?.x == mousePosition.x &&
+                                    newBuilding?.groundCoords?.first()?.z == mousePosition.y) {
+
+                                    newBuilding?.finish()
                                     newBuilding = null
+                                    city.createGraphAtHeight()
                                 }
                                 newBuilding?.addGroundPoint(mousePosition.x, mousePosition.y)
                             }
-                            CityCreatorMode.ADD_BASE_STATION -> TODO()
-                            CityCreatorMode.ADD_DESTINATION -> TODO()
+                            CityCreatorMode.ADD_BASE_STATION -> {
+                                val nearestVertex = city.getNearestVertex(mousePosition)
+                                nearestVertex?.let {
+                                    it.isBaseStation = !it.isBaseStation
+                                }
+                            }
+                            CityCreatorMode.ADD_DESTINATION -> {
+                                val nearestVertex = city.getNearestVertex(mousePosition)
+                                nearestVertex?.let {
+                                    it.isDestination = !it.isDestination
+                                }
+                            }
                             CityCreatorMode.REMOVE -> TODO()
                             CityCreatorMode.NONE -> {}
                         }
@@ -90,7 +106,11 @@ fun CityCreator() {
                 BuildingList(
                     modifier = Modifier.width(250.dp).fillMaxHeight(),
                     city = city,
-                )
+                ) {
+                    newBuilding?.finish()
+                    newBuilding = null
+                    city.createGraphAtHeight()
+                }
 
             }
 

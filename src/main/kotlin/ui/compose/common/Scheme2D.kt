@@ -7,6 +7,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -26,6 +28,8 @@ fun Scheme2D(
     modifier: Modifier = Modifier,
     city: City,
     editorMode: Boolean = false,
+    drawBaseGraph: Boolean = true,
+    drawFullGraph: Boolean = true,
     onClick: (() -> Unit) = {},
     onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
 ) {
@@ -128,6 +132,7 @@ fun Scheme2D(
 
         // Рисуем ребра графа
         city.graph.edges.forEach { edge ->
+            if (!(edge.isBase && !drawBaseGraph)) return@forEach
             val startX = edge.vertex1.position.x * scale + offset
             val startY = edge.vertex1.position.z * scale + offset
             val endX = edge.vertex2.position.x * scale + offset
@@ -143,14 +148,38 @@ fun Scheme2D(
 
         // Рисуем вершины графа
         city.graph.vertices.forEach { vertex ->
+            if (!drawBaseGraph && !drawFullGraph) return@forEach
+
             val x = vertex.position.x * scale + offset
             val y = vertex.position.z * scale + offset
 
-            drawCircle(
-                color = KEY_POINT_COLOR,
-                radius = 6f,
-                center = Offset(x, y)
-            )
+            if (vertex.isBaseStation && vertex.isDestination) {
+
+                drawCircle(
+                    DESTINATION_COLOR,
+                    radius = 6f,
+                    center = Offset(x, y)
+                )
+                drawArc(
+                    color = BASE_STATION_COLOR,
+                    startAngle = -90f,
+                    sweepAngle = 180f,
+                    style = Fill,
+                    useCenter = false,
+                    size = Size(12f, 12f),
+                    topLeft = Offset(x - 6, y - 6),
+                )
+
+            } else {
+                val color = if (vertex.isBaseStation) BASE_STATION_COLOR else if (vertex.isDestination) DESTINATION_COLOR else KEY_POINT_COLOR
+                drawCircle(
+                    color = color,
+                    radius = 6f,
+                    center = Offset(x, y)
+                )
+            }
+
+
         }
 
         if (editorMode) {

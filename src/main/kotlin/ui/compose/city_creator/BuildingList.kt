@@ -7,10 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import model.City
+import model.landscape.Building
 
 
 @Composable
-fun BuildingList(modifier: Modifier = Modifier, city: City) {
+fun BuildingList(modifier: Modifier = Modifier, city: City, onBuildingFinished: () -> Unit) {
 
     LazyColumn(
         modifier = modifier,
@@ -20,7 +21,8 @@ fun BuildingList(modifier: Modifier = Modifier, city: City) {
             item {
                 BuildingItem(
                     modifier = Modifier,
-                    building = building
+                    building = building,
+                    onFinished = { onBuildingFinished() }
                 )
             }
         }

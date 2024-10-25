@@ -31,6 +31,15 @@ data class Building(
         groundCoords.add(Vector3f(x, 0f, z))
     }
 
+    fun finish() {
+        if (groundCoords.isNotEmpty()) {
+            if (groundCoords.first() != groundCoords.last()) {
+                groundCoords.add(groundCoords.first())
+            }
+
+        }
+    }
+
     fun toJTSPolygon(): Polygon {
         val coordinates = groundCoords.map {
             Coordinate(it.x.toDouble(), it.z.toDouble())
