@@ -15,19 +15,26 @@ import androidx.compose.ui.unit.dp
 
 
 @Composable
-fun ActionButton(
+fun ActionCheckButton(
     modifier: Modifier = Modifier,
+    buttonMode: CityCreatorMode,
+    selectedMode: CityCreatorMode,
     icon: ImageVector,
     tint: Color = Color.Black,
-    onClick: () -> Unit
+    onModeChange: (CityCreatorMode) -> Unit
 ) {
+
+    val checked by derivedStateOf { buttonMode == selectedMode}
 
     IconButton(
         modifier = modifier
             .size(48.dp)
             .padding(8.dp)
-            .background(Color.LightGray),
-        onClick = onClick
+            .background(if (checked) Color.Gray else Color.LightGray),
+        onClick = {
+            println("click $buttonMode $selectedMode $checked")
+            onModeChange(if (checked) CityCreatorMode.NONE else buttonMode)
+        }
     ) {
 
         Icon(icon, contentDescription = null, tint = tint)

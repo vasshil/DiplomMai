@@ -11,17 +11,20 @@ import model.landscape.Building
 
 
 @Composable
-fun BuildingList(modifier: Modifier = Modifier, city: City, onBuildingFinished: () -> Unit) {
+fun BuildingList(modifier: Modifier = Modifier, city: City, onBuildingChanged: (Building) -> Unit, onBuildingFinished: () -> Unit) {
 
     LazyColumn(
         modifier = modifier,
     ) {
 
-        city.buildings.forEach { building ->
+        city.buildings.forEachIndexed { i, building ->
             item {
                 BuildingItem(
                     modifier = Modifier,
                     building = building,
+                    onChanged = {
+                        onBuildingChanged(it)
+                    },
                     onFinished = { onBuildingFinished() }
                 )
             }

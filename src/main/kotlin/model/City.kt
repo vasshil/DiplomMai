@@ -1,6 +1,7 @@
 package model
 
 import androidx.compose.ui.geometry.Offset
+import com.jme3.math.Vector3f
 import model.graph.Edge
 import model.graph.Graph3D
 import model.graph.Vertex
@@ -8,13 +9,17 @@ import model.landscape.Building
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Polygon
+import java.io.File
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.io.Serializable
 import kotlin.math.abs
 import kotlin.math.hypot
 
 data class City(
     val buildings: MutableList<Building> = mutableListOf(),
     var graph: Graph3D = Graph3D(),
-) {
+): Serializable {
 
     fun newBuilding(): Building {
         val newId = if (buildings.isEmpty()) 0 else buildings.last().id + 1
@@ -41,6 +46,13 @@ data class City(
 
     fun createGraphAtHeight(height: Float = 0f): Graph3D {
         val graph = Graph3D()
+
+
+
+
+
+
+
 
         val buildingsGeometry = mutableListOf<Polygon>()
 
@@ -92,5 +104,61 @@ data class City(
         return false
     }
 
+
+    // Сохранение объекта в файл в формате JSON
+    fun saveToFile(filePath: String) {
+
+        File(filePath).outputStream().use {
+            ObjectOutputStream(it).writeObject(this)
+        }
+
+//        val json = Json {
+//            serializersModule = SerializersModule {
+//                contextual(Vector3fSerializer) // Регистрируем кастомный сериализатор
+//            }
+//        }
+//        val jsonString = json.encodeToString(this)
+//        File(filePath).writeText(jsonString)
+    }
+
+    companion object {
+        // Загрузка объекта из файла в формате JSON
+        fun loadFromFile(filePath: String): City? {
+
+            val file = File(filePath)
+            return if (file.exists()) {
+                try {
+                    file.inputStream().use {
+                        (ObjectInputStream(it).readObject() as City).apply {
+//                            graph = createGraphAtHeight()
+                        }
+                    }
+                } catch (_: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
+
+
+//            val json = Json {
+//                serializersModule = SerializersModule {
+//                    contextual(Vector3fSerializer) // Регистрируем кастомный сериализатор
+//                }
+//            }
+//
+//            val file = File(filePath)
+//            return if (file.exists()) {
+//                val jsonString = file.readText()
+//                try {
+//                    json.decodeFromString<City>(jsonString)
+//                } catch (_: Exception) {
+//                    null
+//                }
+//            } else {
+//                null
+//            }
+        }
+    }
 
 }

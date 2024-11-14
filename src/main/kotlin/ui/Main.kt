@@ -3,10 +3,7 @@ package ui
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -19,22 +16,27 @@ import model.landscape.Building
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Polygon
+import ui.compose.city_creator.CityCreatorViewModel
 import ui.compose.common.Scheme2D
 
 @Composable
 @Preview
 fun App() {
 
-    val buildings by remember {
-        mutableStateOf(createBuildings())
+    var city by remember { mutableStateOf<City?>(null) }
+
+    LaunchedEffect(Unit) {
+        city = City.loadFromFile("city1234.txt")
     }
 
-
     MaterialTheme {
-        Scheme2D(
-            modifier = Modifier.size(width = 600.dp, height = 500.dp),
-            city = City(buildings).apply { createGraphAtHeight() }
-        )
+        city?.let {
+            Scheme2D(
+                modifier = Modifier.size(width = 600.dp, height = 500.dp),
+                city = it
+            )
+        }
+
     }
 
 }
@@ -45,66 +47,3 @@ fun main() = application {
     }
 }
 
-
-fun createBuildings(): MutableList<Building> {
-    val buildings = mutableListOf<Building>(
-        // Треугольное здание
-        Building(
-            id = 0,
-            groundCoords = mutableListOf(
-                Vector3f(10f, 0f, 10f),
-                Vector3f(20f, 0f, 10f),
-                Vector3f(15f, 0f, 20f)
-            ),
-            height = 15f
-        ),
-        // Здание в виде буквы "Г"
-        Building(
-            id = 1,
-            groundCoords = mutableListOf(
-                Vector3f(30f, 0f, 30f),
-                Vector3f(40f, 0f, 30f),
-                Vector3f(40f, 0f, 35f),
-                Vector3f(35f, 0f, 35f),
-                Vector3f(35f, 0f, 40f),
-                Vector3f(30f, 0f, 40f)
-            ),
-            height = 20f
-        ),
-        // Прямоугольное здание 1
-        Building(
-            id = 2,
-            groundCoords = mutableListOf(
-                Vector3f(50f, 0f, 50f),
-                Vector3f(60f, 0f, 50f),
-                Vector3f(60f, 0f, 60f),
-                Vector3f(50f, 0f, 60f)
-            ),
-            height = 25f
-        ),
-        // Прямоугольное здание 2
-        Building(
-            id = 3,
-            groundCoords = mutableListOf(
-                Vector3f(70f, 0f, 70f),
-                Vector3f(85f, 0f, 70f),
-                Vector3f(85f, 0f, 80f),
-                Vector3f(70f, 0f, 80f)
-            ),
-            height = 30f
-        ),
-        // Прямоугольное здание 3
-        Building(
-            id = 4,
-            groundCoords = mutableListOf(
-                Vector3f(90f, 0f, 10f),
-                Vector3f(100f, 0f, 10f),
-                Vector3f(100f, 0f, 20f),
-                Vector3f(90f, 0f, 20f)
-            ),
-            height = 10f
-        )
-    )
-
-    return buildings
-}

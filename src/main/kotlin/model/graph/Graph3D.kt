@@ -1,11 +1,12 @@
 package model.graph
 
 import com.jme3.math.Vector3f
+import java.io.Serializable
 
 data class Graph3D(
     val vertices: MutableList<Vertex> = mutableListOf(),
     val edges: MutableList<Edge> = mutableListOf(),
-) {
+): Serializable {
 
     fun add(buildingId: Long, vertex: Vertex) {
         vertices.add(vertex)

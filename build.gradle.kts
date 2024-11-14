@@ -4,6 +4,8 @@ plugins {
     kotlin("jvm")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
+
+//    kotlin("plugin.serialization") version "1.4.21"
 //    id("application")
 //    id("io.github.0ffz.github-packages1.2.1")
 }
@@ -48,6 +50,8 @@ dependencies {
 
     // geometry
     implementation("org.locationtech.jts:jts-core:1.20.0")
+
+//    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 }
 
 compose.desktop {

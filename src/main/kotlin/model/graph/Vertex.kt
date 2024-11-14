@@ -2,6 +2,8 @@ package model.graph
 
 import com.jme3.math.Vector3f
 import org.locationtech.jts.geom.Coordinate
+import java.io.Serializable
+
 
 data class Vertex(
     val buildingId: Long,
@@ -9,7 +11,7 @@ data class Vertex(
     val edges: MutableList<Edge> = mutableListOf(),
     var isBaseStation: Boolean = false,
     var isDestination: Boolean = false,
-) {
+): Serializable {
 
     constructor(buildingId: Long, x: Float, y: Float, z: Float) : this(buildingId, Vector3f(x, y, z))
 

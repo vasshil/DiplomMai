@@ -1,42 +1,31 @@
 package ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import model.City
 import model.landscape.Building
 import ui.compose.city_creator.BuildingList
 import ui.compose.city_creator.CityCreatorMode
+import ui.compose.city_creator.CityCreatorViewModel
 import ui.compose.city_creator.TopBar
-import ui.compose.common.BASE_STATION_COLOR
-import ui.compose.common.BUILDING_COLOR
-import ui.compose.common.DESTINATION_COLOR
 import ui.compose.common.Scheme2D
 
 @Composable
 @Preview
-fun CityCreator() {
+fun CityCreator(viewModel: CityCreatorViewModel) {
 
     var editorMode by remember { mutableStateOf(CityCreatorMode.NONE) }
 
-    println(editorMode)
-
-    val city by remember {
-        mutableStateOf(City())
-    }
+    val city by viewModel.cityFlow.collectAsState()
+    println("collected city $city")
 
     var newBuilding: Building? by remember { mutableStateOf(null) }
 
@@ -52,6 +41,14 @@ fun CityCreator() {
                 modifier = Modifier,
                 mousePosition = mousePosition,
                 editorMode = editorMode,
+                saveCity = {
+                    city.saveToFile("city1234.txt")
+                },
+                loadCity = {
+                    City.loadFromFile("city1234.txt")?.let { loadedCity ->
+                        viewModel.setCity(loadedCity)
+                    }
+                }
             ) { mode ->
                 editorMode = mode
             }
@@ -106,6 +103,9 @@ fun CityCreator() {
                 BuildingList(
                     modifier = Modifier.width(250.dp).fillMaxHeight(),
                     city = city,
+                    onBuildingChanged = { changedBuilding ->
+                        viewModel.updateBuilding(changedBuilding)
+                    }
                 ) {
                     newBuilding?.finish()
                     newBuilding = null
@@ -122,8 +122,11 @@ fun CityCreator() {
 
 
 fun main() = application {
+
+    val viewModel = CityCreatorViewModel()
+
     Window(onCloseRequest = ::exitApplication) {
-        CityCreator()
+        CityCreator(viewModel)
     }
 }
 

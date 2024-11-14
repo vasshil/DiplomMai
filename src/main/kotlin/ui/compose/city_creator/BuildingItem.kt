@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import model.landscape.Building
 import ui.compose.common.BUILDING_COLOR
 
@@ -20,6 +22,7 @@ import ui.compose.common.BUILDING_COLOR
 fun BuildingItem(
     modifier: Modifier = Modifier,
     building: Building,
+    onChanged: (Building) -> Unit,
     onFinished: () -> Unit,
 ) {
 
@@ -39,13 +42,16 @@ fun BuildingItem(
             Column {
                 Text(
                     modifier = Modifier.padding(start = 5.dp),
-                    text = "Здание ${building.id}"
+                    text = "Здание ${building.id}",
+                    fontSize = 10.sp
                 )
                 Text(
                     modifier = Modifier.padding(start = 5.dp),
-                    text = "Точек: ${building.groundCoords.size}"
+                    text = "Точек: ${building.groundCoords.size}",
+                    fontSize = 10.sp
                 )
                 if (building.groundCoords.first() != building.groundCoords.last()) {
+                    // полигон здания закончен
                     Button(
                         modifier = Modifier.padding(start = 5.dp),
                         onClick = {
@@ -53,6 +59,19 @@ fun BuildingItem(
                         }) {
                         Text("Готово")
                     }
+
+                } else {
+                    TextField(
+                        value = building.height.toString(),
+                        onValueChange = {
+                            it.toFloatOrNull()?.let { height ->
+                                onChanged(building.copy(height = height))
+                            }
+                        },
+                        trailingIcon = {
+                            Text(text = "м", fontSize = 10.sp, color = Color(204, 204, 204))
+                        }
+                    )
                 }
 
             }

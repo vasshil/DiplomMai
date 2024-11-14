@@ -10,20 +10,29 @@ import com.jme3.post.FilterPostProcessor
 import com.jme3.renderer.RenderManager
 import com.jme3.renderer.queue.RenderQueue
 import com.jme3.scene.Geometry
+import com.jme3.scene.Mesh
+import com.jme3.scene.VertexBuffer
 import com.jme3.scene.shape.Box
 import com.jme3.scene.shape.Line
 import com.jme3.scene.shape.Sphere
 import com.jme3.shadow.DirectionalLightShadowFilter
 import com.jme3.shadow.DirectionalLightShadowRenderer
+import com.jme3.util.BufferUtils
+import model.City
 import model.graph.Edge
 import model.graph.Graph3D
 import model.graph.Vertex
 import model.landscape.Building
+import ui.compose.common.BUILDING_COLOR
+import ui.compose.common.toColorRGBA
 
 
 class City1 : SimpleApplication() {
 
     override fun simpleInitApp() {
+
+        val city = City.loadFromFile("city1234.txt") ?: return
+
 //        val b = Box(1f, 1f, 1f)
 //        val geom = Geometry("Box", b)
 //
@@ -47,11 +56,9 @@ class City1 : SimpleApplication() {
         rootNode.attachChild(ground)
 
 
-        // Создаем несколько параллелепипедов (зданий) полупрозрачного голубого цвета
-        val buildings = createBuildings()
-//        buildings.forEach {
-//            displayBuilding(it)
-//        }
+        city.buildings.forEach {
+            displayBuilding(it)
+        }
 
 //        val graph = createGraph(buildings)
 //        displayGraph(graph)
@@ -84,27 +91,94 @@ class City1 : SimpleApplication() {
     }
 
 
-//    private fun displayBuilding(b: Building) {
-//        val baseSize = 10f//m
-//        val box = Box(
-//            b.size.x / 2 * baseSize,
-//            b.size.y / 2 * baseSize,
-//            b.size.z / 2 * baseSize
-//        )
-//        val building = Geometry("Building", box)
+    private fun displayBuilding(b: Building) {
+        val baseSize = 1f//m
+        val buildingMesh = b.getMesh3D()
+//        println(buildingMesh.)
+
+        val building = Geometry("Building", buildingMesh)
+
+
+
+        // Устанавливаем прозрачный материал
+        val material = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")
+        material.setColor("Color", ColorRGBA.Blue.mult(ColorRGBA(1f, 1f, 1f, 0.5f))) // Полупрозрачный синий
+//        material.isTransparent = true
+        building.material = material
+//        building.queueBucket = RenderQueue.Bucket.Transparent
+
+        // Добавляем тени
+        building.shadowMode = RenderQueue.ShadowMode.CastAndReceive
+
+        // Добавляем свет и тени
+        val light = DirectionalLight()
+        light.direction = Vector3f(-1f, -1f, -1f).normalizeLocal()
+        rootNode.addLight(light)
+
+        val shadowRenderer = DirectionalLightShadowRenderer(assetManager, 1024, 3)
+        shadowRenderer.light = light
+        viewPort.addProcessor(shadowRenderer)
+
+        // Добавляем фильтр для корректной работы прозрачности
+        val fpp = FilterPostProcessor(assetManager)
+//        fpp.addFilter(TranslucentBucketFilter())
+        viewPort.addProcessor(fpp)
+
+
 //        val mat = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
 //        mat.setBoolean("UseMaterialColors", true)
-//        mat.setColor("Diffuse", ColorRGBA(0.5f, 0.7f, 1.0f, 0.1f)) // Основной цвет с легкой
-//        mat.setColor("Specular", ColorRGBA(0.5f, 0.7f, 1.0f, 0.1f)) // Белый цвет для отраженных бликов
-//        mat.setFloat("Shininess", 10f) // Значение блеска поверхности
+//        mat.setColor("Diffuse", BUILDING_COLOR.toColorRGBA()) // Основной цвет с легкой
+////        mat.setColor("Specular", ColorRGBA(0.5f, 0.7f, 1.0f, 0.1f)) // Белый цвет для отраженных бликов
+////        mat.setFloat("Shininess", 10f) // Значение блеска поверхности
 //        building.material = mat
 //        building.shadowMode = RenderQueue.ShadowMode.CastAndReceive
 //        building.localTranslation = b.position
 //            .multLocal(baseSize)
 //            .addLocal(Vector3f(b.size.x / 2 * baseSize, b.size.y / 2 * baseSize, b.size.z / 2 * baseSize))
 //        building.queueBucket = RenderQueue.Bucket.Transparent
-//        rootNode.attachChild(building)
-//    }
+        rootNode.attachChild(building)
+    }
+
+    // Функция для создания Mesh для здания
+    fun createBuildingMesh(building: Building): Mesh {
+        val mesh = Mesh()
+        val numVertices = building.groundCoords.size
+        val vertices = mutableListOf<Vector3f>()
+        val indices = mutableListOf<Int>()
+
+        // Добавляем вершины основания
+        vertices.addAll(building.groundCoords)
+
+        // Добавляем вершины для верха здания (экструдируем по высоте)
+        vertices.addAll(building.groundCoords.map { Vector3f(it.x, it.y + building.height, it.z) })
+
+//        indices.addAll(triangulatePolygon(vertices.subList(0, numVertices)))
+//        indices.addAll(triangulatePolygon(vertices.subList(numVertices, vertices.size)))
+
+        // Индексы для верха
+        val topOffset = numVertices
+
+
+        // Индексы для боковых стен
+        for (i in 0 until numVertices) {
+            val next = (i + 1) % numVertices
+            indices.add(i)
+            indices.add(next)
+            indices.add(topOffset + i)
+
+            indices.add(next)
+            indices.add(topOffset + next)
+            indices.add(topOffset + i)
+        }
+
+        mesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(*vertices.toTypedArray()))
+        mesh.setBuffer(VertexBuffer.Type.Index, 3, BufferUtils.createIntBuffer(*indices.toIntArray()))
+        mesh.updateBound()
+        return mesh
+    }
+
+
+
 
     private fun displayGraph(graph: Graph3D) {
         // Добавляем вершины (в виде сфер) и ребра (в виде линий) в сцену

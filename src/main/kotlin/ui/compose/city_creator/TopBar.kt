@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.AddHome
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import model.City
 import ui.compose.common.BASE_STATION_COLOR
 import ui.compose.common.BUILDING_COLOR
 import ui.compose.common.DESTINATION_COLOR
@@ -27,6 +26,8 @@ fun TopBar(
     modifier: Modifier = Modifier,
     mousePosition: Offset,
     editorMode: CityCreatorMode,
+    saveCity: () -> Unit,
+    loadCity: () -> Unit,
     onModeChange: (CityCreatorMode) -> Unit
 ) {
 
@@ -35,7 +36,7 @@ fun TopBar(
             .background(Color.LightGray),
     ) {
 
-        ActionButton(
+        ActionCheckButton(
             modifier = Modifier,
             buttonMode = CityCreatorMode.ADD_BUILDING,
             selectedMode = editorMode,
@@ -44,7 +45,7 @@ fun TopBar(
             onModeChange = onModeChange
         )
 
-        ActionButton(
+        ActionCheckButton(
             modifier = Modifier,
             buttonMode = CityCreatorMode.ADD_BASE_STATION,
             selectedMode = editorMode,
@@ -53,7 +54,7 @@ fun TopBar(
             onModeChange = onModeChange
         )
 
-        ActionButton(
+        ActionCheckButton(
             modifier = Modifier,
             buttonMode = CityCreatorMode.ADD_DESTINATION,
             selectedMode = editorMode,
@@ -62,13 +63,25 @@ fun TopBar(
             onModeChange = onModeChange
         )
 
-        ActionButton(
+        ActionCheckButton(
             modifier = Modifier,
             buttonMode = CityCreatorMode.REMOVE,
             selectedMode = editorMode,
             icon = Icons.Filled.Delete,
             onModeChange = onModeChange
         )
+
+        ActionButton(
+            icon = Icons.Filled.Save,
+        ) {
+            saveCity()
+        }
+
+        ActionButton(
+            icon = Icons.Filled.FileUpload,
+        ) {
+            loadCity()
+        }
 
         Spacer(Modifier.weight(1f))
 

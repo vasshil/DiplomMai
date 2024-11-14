@@ -132,7 +132,7 @@ fun Scheme2D(
 
         // Рисуем ребра графа
         city.graph.edges.forEach { edge ->
-            if (!(edge.isBase && !drawBaseGraph)) return@forEach
+//            if (!(edge.isBase && !drawBaseGraph)) return@forEach
             val startX = edge.vertex1.position.x * scale + offset
             val startY = edge.vertex1.position.z * scale + offset
             val endX = edge.vertex2.position.x * scale + offset
