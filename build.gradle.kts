@@ -56,7 +56,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "MainKt"
+        mainClass = "ui/CityCreator.kt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

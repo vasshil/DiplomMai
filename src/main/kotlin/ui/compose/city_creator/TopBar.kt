@@ -19,6 +19,7 @@ import model.City
 import ui.compose.common.BASE_STATION_COLOR
 import ui.compose.common.BUILDING_COLOR
 import ui.compose.common.DESTINATION_COLOR
+import ui.compose.common.FOCUSED_BUILDING_COLOR
 
 
 @Composable
@@ -41,7 +42,7 @@ fun TopBar(
             buttonMode = CityCreatorMode.ADD_BUILDING,
             selectedMode = editorMode,
             icon = Icons.Filled.AddHome,
-            tint = BUILDING_COLOR,
+            tint = FOCUSED_BUILDING_COLOR,
             onModeChange = onModeChange
         )
 

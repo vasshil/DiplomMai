@@ -1,11 +1,11 @@
 package ui.compose.city_creator
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.Divider
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import model.landscape.Building
 import ui.compose.common.BUILDING_COLOR
+import ui.compose.common.BUTTON_COLOR
+import ui.compose.common.TEXT_FIELD_COLOR
 
 @Composable
 fun BuildingItem(
@@ -36,7 +38,7 @@ fun BuildingItem(
             Box(
                 modifier = Modifier.size(96.dp)
             ) {
-                BuildingPreview(Modifier.align(Alignment.Center), building)
+                BuildingPreviewImage(Modifier.align(Alignment.Center), building)
             }
 
             Column {
@@ -54,6 +56,7 @@ fun BuildingItem(
                     // полигон здания закончен
                     Button(
                         modifier = Modifier.padding(start = 5.dp),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = BUTTON_COLOR),
                         onClick = {
                             onFinished()
                         }) {
@@ -61,17 +64,33 @@ fun BuildingItem(
                     }
 
                 } else {
-                    TextField(
-                        value = building.height.toString(),
-                        onValueChange = {
-                            it.toFloatOrNull()?.let { height ->
-                                onChanged(building.copy(height = height))
-                            }
-                        },
-                        trailingIcon = {
-                            Text(text = "м", fontSize = 10.sp, color = Color(204, 204, 204))
+
+                    Row(
+                        modifier = Modifier.padding(top = 5.dp).background(color = TEXT_FIELD_COLOR, shape = CircleShape),
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 3.dp),
+                        ) {
+                            BasicTextField(
+                                modifier = Modifier.align(Alignment.CenterEnd).padding(start = 5.dp),
+                                value = building.height.toString(),
+                                onValueChange = {
+                                    it.toFloatOrNull()?.let { height ->
+                                        onChanged(building.copy(height = height))
+                                    }
+                                },
+                            )
+                            Text(
+                                text = "м",
+                                fontSize = 14.sp,
+                                color = Color(159, 159, 159),
+                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 10.dp)
+                            )
                         }
-                    )
+
+                    }
+
+
                 }
 
             }
@@ -84,8 +103,9 @@ fun BuildingItem(
 
 
 }
+
 @Composable
-private fun BuildingPreview(modifier: Modifier, building: Building) {
+private fun BuildingPreviewImage(modifier: Modifier, building: Building) {
 
     if (building.groundCoords.isEmpty()) return
 

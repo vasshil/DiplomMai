@@ -1,6 +1,7 @@
 package ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -29,6 +30,8 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
 
     var newBuilding: Building? by remember { mutableStateOf(null) }
 
+    var focusedBuildingId by remember { mutableLongStateOf(-1) }
+
     var mousePosition by remember { mutableStateOf(Offset.Zero) }
 
     MaterialTheme {
@@ -38,7 +41,7 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
         ) {
 
             TopBar(
-                modifier = Modifier,
+                modifier = Modifier.background(Color.LightGray),
                 mousePosition = mousePosition,
                 editorMode = editorMode,
                 saveCity = {
@@ -62,6 +65,7 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
                     city = city,
                     editorMode = true,
                     drawBaseGraph = true,
+                    focusedBuildingId = focusedBuildingId,
                     onClick = {
                         when (editorMode) {
                             CityCreatorMode.ADD_BUILDING -> {
@@ -103,6 +107,9 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
                 BuildingList(
                     modifier = Modifier.width(250.dp).fillMaxHeight(),
                     city = city,
+                    onFocusChange = { focused, id ->
+                        focusedBuildingId = if (!focused) -1 else id
+                    },
                     onBuildingChanged = { changedBuilding ->
                         viewModel.updateBuilding(changedBuilding)
                     }
