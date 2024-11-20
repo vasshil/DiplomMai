@@ -6,9 +6,7 @@ import model.graph.Edge
 import model.graph.Graph3D
 import model.graph.Vertex
 import model.landscape.Building
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.LineString
-import org.locationtech.jts.geom.Polygon
+import org.locationtech.jts.geom.*
 import java.io.File
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -26,6 +24,10 @@ data class City(
         val newBuilding = Building(newId)
         buildings.add(newBuilding)
         return buildings.last()
+    }
+
+    fun removeBuilding(id: Long) {
+        buildings.removeIf { it.id == id }
     }
 
 //    fun addBaseStation(station: Vertex) {
@@ -121,6 +123,15 @@ data class City(
 //        File(filePath).writeText(jsonString)
     }
 
+    fun checkPointAt(x: Float, y: Float): Building? {
+        buildings.forEach {
+            if (it.toJTSPolygon().contains(GeometryFactory().createPoint(Coordinate(x.toDouble(), y.toDouble())))) {
+                return it
+            }
+        }
+        return null
+    }
+
     companion object {
         // Загрузка объекта из файла в формате JSON
         fun loadFromFile(filePath: String): City? {
@@ -133,10 +144,12 @@ data class City(
 //                            graph = createGraphAtHeight()
                         }
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    println("read file error $e")
                     null
                 }
             } else {
+                println("file not found $filePath")
                 null
             }
 

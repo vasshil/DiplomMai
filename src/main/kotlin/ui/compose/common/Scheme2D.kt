@@ -2,19 +2,16 @@ package ui.compose.common
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +19,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
@@ -36,6 +32,7 @@ import core.findShortestPathDijkstra
 import core.pathLength
 import model.City
 import model.graph.Vertex
+import ui.compose.city_creator.CityCreatorMode
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -43,7 +40,8 @@ import kotlin.math.roundToInt
 fun Scheme2D(
     modifier: Modifier = Modifier,
     city: City,
-    editorMode: Boolean = false,
+    cityCreatorMode: CityCreatorMode = CityCreatorMode.NONE,
+    isEditorMode: Boolean = false,
     drawBaseGraph: Boolean = true,
     drawFullGraph: Boolean = true,
     focusedBuildingId: Long = -1,
@@ -62,7 +60,7 @@ fun Scheme2D(
         scale *= zoomChange
 //        rotation += rotationChange
         offset += offsetChange
-        println("$scale, offsetChange:$offset")
+//        println("$scale, offsetChange:$offset")
 //        println("$zoomChange, offsetChange:$offsetChange, rotationChange:$rotationChange")
     }
 
@@ -83,7 +81,7 @@ fun Scheme2D(
 
                         onClick()
 
-                        if (editorMode) return@detectTapGestures
+                        if (isEditorMode) return@detectTapGestures
 
                         // Переводим координаты клика в координаты графа с учетом смещения и масштаба
                         val clickedPosition = Vector3f(
@@ -178,7 +176,12 @@ fun Scheme2D(
 
                 drawPath(
                     path = path,
-                    color = if (focusedBuildingId == building.id) FOCUSED_BUILDING_COLOR else BUILDING_COLOR,
+                    color = if (focusedBuildingId == building.id) {
+                        when(cityCreatorMode) {
+                            CityCreatorMode.REMOVE -> DELETE_FOCUSED_BUILDING_COLOR
+                            else -> FOCUSED_BUILDING_COLOR
+                        }
+                    } else BUILDING_COLOR,
                     style = Fill
                 )
 
@@ -236,7 +239,7 @@ fun Scheme2D(
 
             }
 
-            if (editorMode) {
+            if (isEditorMode) {
                 // место курсора
                 drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x - 10, mouseCoordinate.y), Offset(mouseCoordinate.x + 10, mouseCoordinate.y), 1f)
                 drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x, mouseCoordinate.y - 10), Offset(mouseCoordinate.x, mouseCoordinate.y + 10), 1f)

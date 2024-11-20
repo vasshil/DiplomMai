@@ -63,7 +63,8 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
                 Scheme2D(
                     modifier = Modifier.width(width = 600.dp).weight(1f).fillMaxHeight(),
                     city = city,
-                    editorMode = true,
+                    cityCreatorMode = editorMode,
+                    isEditorMode = true,
                     drawBaseGraph = true,
                     focusedBuildingId = focusedBuildingId,
                     onClick = {
@@ -94,12 +95,23 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
                                     it.isDestination = !it.isDestination
                                 }
                             }
-                            CityCreatorMode.REMOVE -> TODO()
+                            CityCreatorMode.REMOVE -> {
+                                if (focusedBuildingId != -1L) {
+                                    city.removeBuilding(focusedBuildingId)
+                                    city.createGraphAtHeight()
+                                }
+
+                            }
                             CityCreatorMode.NONE -> {}
                         }
                     }
                 ) { position, pressed ->
                     mousePosition = position
+//                    println(position)
+                    if (editorMode != CityCreatorMode.ADD_BUILDING) {
+                        focusedBuildingId = city.checkPointAt(position.x, position.y)?.id ?: -1
+                    }
+
                 }
 
                 Divider(color = Color.Black, modifier = Modifier.width(1.dp).fillMaxHeight())
