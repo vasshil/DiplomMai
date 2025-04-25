@@ -30,14 +30,6 @@ data class City(
         buildings.removeIf { it.id == id }
     }
 
-//    fun addBaseStation(station: Vertex) {
-//        baseStations.add(station)
-//    }
-//
-//    fun addDestinationStation(station: Vertex) {
-//        destinations.add(station)
-//    }
-
     fun getNearestVertex(mouse: Offset): Vertex? {
         for (vertex in graph.vertices.reversed()) {
             if (hypot(vertex.position.x - mouse.x, vertex.position.z - mouse.y) <= 3) return vertex
@@ -153,24 +145,6 @@ data class City(
                 null
             }
 
-
-//            val json = Json {
-//                serializersModule = SerializersModule {
-//                    contextual(Vector3fSerializer) // Регистрируем кастомный сериализатор
-//                }
-//            }
-//
-//            val file = File(filePath)
-//            return if (file.exists()) {
-//                val jsonString = file.readText()
-//                try {
-//                    json.decodeFromString<City>(jsonString)
-//                } catch (_: Exception) {
-//                    null
-//                }
-//            } else {
-//                null
-//            }
         }
     }
 

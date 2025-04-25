@@ -19,11 +19,6 @@ import org.locationtech.jts.triangulate.polygon.ConstrainedDelaunayTriangulator
 import org.locationtech.jts.triangulate.tri.Tri
 import java.io.Serializable
 
-//data class Building(
-//    val position: Vector3f,
-//    val size: Vector3f
-//)
-
 data class Building(
     val id: Long,
     val groundCoords: MutableList<Vector3f> = mutableListOf(),

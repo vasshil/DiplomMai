@@ -28,6 +28,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.jme3.math.Vector3f
 import core.distanceBetween
+import core.findShortestPathAStar
 import core.findShortestPathDijkstra
 import core.pathLength
 import model.City
@@ -101,7 +102,8 @@ fun Scheme2D(
                             } else if (selectedVertex2 == null && vertex != selectedVertex1) {
                                 selectedVertex2 = vertex
                                 // Находим кратчайший путь между двумя вершинами
-                                shortestPath = findShortestPathDijkstra(selectedVertex1!!, selectedVertex2!!)
+//                                shortestPath = findShortestPathDijkstra(selectedVertex1!!, selectedVertex2!!)
+                                shortestPath = findShortestPathAStar(city.graph, selectedVertex1!!, selectedVertex2!!)
                                 val len = pathLength(shortestPath)
                                 println("Длина пути ${len} м, потраченный заряд: ${len / 10}%")
                             } else {

@@ -1,8 +1,10 @@
 package core
 
 import com.jme3.math.Vector3f
+import model.graph.Graph3D
 import model.graph.Vertex
 import java.util.*
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 fun findShortestPathDijkstra(start: Vertex, end: Vertex): List<Vertex> {
@@ -57,7 +59,63 @@ fun findShortestPathDijkstra(start: Vertex, end: Vertex): List<Vertex> {
     return emptyList()
 }
 
+fun findShortestPathAStar(graph: Graph3D, start: Vertex, goal: Vertex): List<Vertex> {
+    data class Node(val vertex: Vertex, val cost: Float, val estimate: Float) : Comparable<Node> {
+        override fun compareTo(other: Node): Int {
+            return (cost + estimate).compareTo(other.cost + other.estimate)
+        }
+    }
 
+    // Функция для расчета Евклидова расстояния
+    fun heuristic(v1: Vertex, v2: Vertex): Float {
+        return sqrt((v1.position.x - v2.position.x).pow(2) +
+                (v1.position.y - v2.position.y).pow(2) +
+                (v1.position.z - v2.position.z).pow(2))
+    }
+
+    val openSet = PriorityQueue<Node>()
+    val cameFrom = mutableMapOf<Vertex, Vertex?>()
+    val gScore = mutableMapOf<Vertex, Float>().withDefault { Float.POSITIVE_INFINITY }
+    val fScore = mutableMapOf<Vertex, Float>().withDefault { Float.POSITIVE_INFINITY }
+
+    gScore[start] = 0f
+    fScore[start] = heuristic(start, goal)
+
+    openSet.add(Node(start, 0f, fScore.getValue(start)))
+
+    while (openSet.isNotEmpty()) {
+        val current = openSet.poll().vertex
+
+        if (current == goal) {
+            // Восстановление пути
+            val path = mutableListOf<Vertex>()
+            var temp: Vertex? = current
+            while (temp != null) {
+                path.add(temp)
+                temp = cameFrom[temp]
+            }
+            return path.reversed()
+        }
+
+        for (edge in current.edges) {
+            val neighbor = if (edge.vertex1 == current) edge.vertex2 else edge.vertex1
+            val tentativeGScore = gScore.getValue(current) + heuristic(current, neighbor)
+
+            if (tentativeGScore < gScore.getValue(neighbor)) {
+                cameFrom[neighbor] = current
+                gScore[neighbor] = tentativeGScore
+                fScore[neighbor] = tentativeGScore + heuristic(neighbor, goal)
+
+                if (neighbor !in openSet.map { it.vertex }) {
+                    openSet.add(Node(neighbor, gScore.getValue(neighbor), fScore.getValue(neighbor)))
+                }
+            }
+        }
+    }
+
+    // Если путь не найден, возвращаем пустой список
+    return emptyList()
+}
 
 //def dijkstra(graph, start):
 //    distances = {vertex: float('infinity') for vertex in graph}

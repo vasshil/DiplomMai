@@ -7,7 +7,6 @@ plugins {
 
 //    kotlin("plugin.serialization") version "1.4.21"
 //    id("application")
-//    id("io.github.0ffz.github-packages1.2.1")
 }
 
 group = "com.app"
@@ -17,6 +16,11 @@ repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
+
+//    flatDir {
+//        dirs("libs")
+//    }
+
 }
 
 //tasks {
@@ -46,6 +50,24 @@ dependencies {
 
     implementation("org.jmonkeyengine:jme3-jbullet:$jmonkeyengineVersion")
     runtimeOnly("org.jmonkeyengine:jme3-lwjgl3:$jmonkeyengineVersion")
+
+//    implementation(fileTree("libs" to "*.jar"))
+//    implementation(kotlin("jme3-ai"))
+//    implementation(fileTree(mapOf("include" to listOf(".jar"), "dir" to "libs")))
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+
+
+
+
+    // recast4j
+    val recast4jVersion = "1.2.8"
+    implementation ("org.recast4j:parent:$recast4jVersion")
+    implementation ("org.recast4j:detour-tile-cache:$recast4jVersion")
+    implementation ("org.recast4j:detour-crowd:$recast4jVersion")
+    implementation ("org.recast4j:detour-extras:$recast4jVersion")
+    implementation ("org.recast4j:recast:$recast4jVersion")
+    implementation ("org.recast4j:detour:$recast4jVersion")
+
 
 
     // geometry
