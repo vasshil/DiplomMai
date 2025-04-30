@@ -35,6 +35,7 @@ import core.pathLength
 import model.City
 import model.graph.Vertex
 import ui.compose.city_creator.CityCreatorMode
+import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -214,11 +215,13 @@ fun Scheme2D(
                 val x = vertex.position.x * scale + offset.x
                 val y = vertex.position.z * scale + offset.y
 
+                val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 9f else 6f
+
                 if (vertex.isBaseStation && vertex.isDestination) {
 
                     drawCircle(
                         DESTINATION_COLOR,
-                        radius = 6f,
+                        radius = r,
                         center = Offset(x, y)
                     )
                     drawArc(
@@ -227,15 +230,15 @@ fun Scheme2D(
                         sweepAngle = 180f,
                         style = Fill,
                         useCenter = false,
-                        size = Size(12f, 12f),
-                        topLeft = Offset(x - 6, y - 6),
+                        size = Size(r * 2, r * 2),
+                        topLeft = Offset(x - r, y - r),
                     )
 
                 } else {
                     val color = if (vertex.isBaseStation) BASE_STATION_COLOR else if (vertex.isDestination) DESTINATION_COLOR else KEY_POINT_COLOR
                     drawCircle(
                         color = color,
-                        radius = 6f,
+                        radius = r,
                         center = Offset(x, y)
                     )
                 }
