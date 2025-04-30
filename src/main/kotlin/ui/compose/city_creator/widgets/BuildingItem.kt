@@ -1,4 +1,4 @@
-package ui.compose.city_creator
+package ui.compose.city_creator.widgets
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -49,7 +49,7 @@ fun BuildingItem(
                 )
                 Text(
                     modifier = Modifier.padding(start = 5.dp),
-                    text = "Точек: ${building.groundCoords.size}",
+                    text = "Точек: ${building.groundCoords.size - 1}",
                     fontSize = 10.sp
                 )
                 if (building.groundCoords.first() != building.groundCoords.last()) {

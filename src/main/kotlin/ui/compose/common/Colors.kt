@@ -19,5 +19,9 @@ val MOUSE_POINT_COLOR = Color(0, 0, 0)
 val TEXT_FIELD_COLOR = Color(228, 228, 228)
 val BUTTON_COLOR = Color(66, 137, 43)
 
+val MODE_SWITCH_BG_COLOR = Color(149, 149, 149)
+val MODE_SWITCH_SELECTED_COLOR = Color(255, 255, 255)
+val MODE_SWITCH_UNSELECTED_COLOR = Color(255, 255, 255, 0x00000000)
+
 fun Color.toColorRGBA() = ColorRGBA(red, green, blue, alpha)
 fun Color.toColorRGBA(transparency: Float) = ColorRGBA(red, green, blue, transparency)

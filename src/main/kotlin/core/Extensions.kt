@@ -1,6 +1,7 @@
 package core
 
 import com.jme3.math.Vector3f
+import model.graph.Vertex
 import org.locationtech.jts.geom.Coordinate
 import kotlin.math.cos
 import kotlin.math.sin
@@ -14,3 +15,10 @@ fun Vector3f.rotateXZ(angleRad: Float): Vector3f {
 }
 
 fun Coordinate.toVector3f(): Vector3f = let { Vector3f(it.x.toFloat(), it.y.toFloat(), it.y.toFloat()) }
+
+fun Vector3f.toJTSCoordinate(): Coordinate = Coordinate(x.toDouble(), z.toDouble())
+
+
+/** Быстро превращаем старую Vertex (XY) в 3-D-вершину конкретного уровня */
+//fun Vertex.to3D(y: Float): Vector3f =
+//    Vector3f(buildingId, position.x, y, position.z)

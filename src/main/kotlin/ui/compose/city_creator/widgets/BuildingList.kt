@@ -1,18 +1,15 @@
-package ui.compose.city_creator
+package ui.compose.city_creator.widgets
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import model.City
 import model.landscape.Building
-import kotlin.math.roundToInt
 
 
 @OptIn(ExperimentalComposeUiApi::class)

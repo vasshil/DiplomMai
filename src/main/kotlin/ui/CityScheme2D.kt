@@ -5,23 +5,30 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import model.City
 import model.landscape.Building
-import ui.compose.city_creator.BuildingList
+import ui.compose.city_creator.widgets.BuildingList
 import ui.compose.city_creator.CityCreatorMode
 import ui.compose.city_creator.CityCreatorViewModel
-import ui.compose.city_creator.TopBar
+import ui.compose.city_creator.CitySchemeMode
+import ui.compose.city_creator.widgets.topbar.TopBar
 import ui.compose.common.Scheme2D
 
 @Composable
 @Preview
-fun CityCreator(viewModel: CityCreatorViewModel) {
+fun CityScheme2D(viewModel: CityCreatorViewModel) {
+
+    var schemeMode by remember { mutableStateOf(CitySchemeMode.VIEW) }
 
     var editorMode by remember { mutableStateOf(CityCreatorMode.NONE) }
 
@@ -51,10 +58,15 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
                     City.loadFromFile("city1234.txt")?.let { loadedCity ->
                         viewModel.setCity(loadedCity)
                     }
+                },
+                onEditorModeChange = { mode ->
+                    editorMode = mode
+                },
+                schemeMode = schemeMode,
+                onSchemeModeChange = { mode ->
+                    schemeMode = mode
                 }
-            ) { mode ->
-                editorMode = mode
-            }
+            )
 
             Row(
                 modifier = Modifier,
@@ -114,21 +126,23 @@ fun CityCreator(viewModel: CityCreatorViewModel) {
 
                 }
 
-                Divider(color = Color.Black, modifier = Modifier.width(1.dp).fillMaxHeight())
+                if (schemeMode == CitySchemeMode.EDITOR) {
+                    Divider(color = Color.Black, modifier = Modifier.width(1.dp).fillMaxHeight())
 
-                BuildingList(
-                    modifier = Modifier.width(250.dp).fillMaxHeight(),
-                    city = city,
-                    onFocusChange = { focused, id ->
-                        focusedBuildingId = if (!focused) -1 else id
-                    },
-                    onBuildingChanged = { changedBuilding ->
-                        viewModel.updateBuilding(changedBuilding)
+                    BuildingList(
+                        modifier = Modifier.width(250.dp).fillMaxHeight(),
+                        city = city,
+                        onFocusChange = { focused, id ->
+                            focusedBuildingId = if (!focused) -1 else id
+                        },
+                        onBuildingChanged = { changedBuilding ->
+                            viewModel.updateBuilding(changedBuilding)
+                        }
+                    ) {
+                        newBuilding?.finish()
+                        newBuilding = null
+                        city.createGraphAtHeight()
                     }
-                ) {
-                    newBuilding?.finish()
-                    newBuilding = null
-                    city.createGraphAtHeight()
                 }
 
             }
@@ -144,8 +158,14 @@ fun main() = application {
 
     val viewModel = CityCreatorViewModel()
 
-    Window(onCloseRequest = ::exitApplication) {
-        CityCreator(viewModel)
+    Window(
+        onCloseRequest = ::exitApplication,
+        state = WindowState(
+            size = DpSize(1300.dp, 768.dp),
+            position = WindowPosition(Alignment.Center),
+        )
+    ) {
+        CityScheme2D(viewModel)
     }
 }
 
