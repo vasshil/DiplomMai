@@ -31,19 +31,17 @@ import com.jme3.math.Vector3f
 import core.algo.LazyGraph3D
 import core.algo.fastestPath3D
 import core.distanceBetween
-import core.findShortestPathAStar
-import core.pathLength
 import core.to3D
 import model.City
 import model.graph.Vertex
 import model.landscape.Building
-import ui.compose.city_creator.CityCreatorMode
+import ui.compose.city_creator.widgets.topbar.CityCreatorMode
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun Scheme2D(
+fun SchemeView(
     modifier: Modifier = Modifier,
     city: City,
     cityCreatorMode: CityCreatorMode = CityCreatorMode.NONE,
@@ -69,7 +67,6 @@ fun Scheme2D(
 //        rotation += rotationChange
         offset += offsetChange
 //        println("$scale, offsetChange:$offset")
-        println("$city")
 //        println("$zoomChange, offsetChange:$offsetChange, rotationChange:$rotationChange")
     }
 

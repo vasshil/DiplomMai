@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import ui.compose.city_creator.CityCreatorMode
 
 
 @Composable
@@ -31,7 +30,7 @@ fun ActionCheckButton(
         modifier = modifier
             .size(48.dp)
             .padding(8.dp)
-            .background(if (checked) Color.Gray else Color.LightGray),
+            .background(if (checked) Color.Gray else Color.Transparent),
         onClick = {
             println("click $buttonMode $selectedMode $checked")
             onEditorModeChange(if (checked) CityCreatorMode.NONE else buttonMode)

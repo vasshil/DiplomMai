@@ -1,6 +1,8 @@
 package model.drone
 
-enum class DroneStatus {
+import java.io.Serializable
+
+enum class DroneStatus: Serializable {
     WAITING,
     CHARGING,
     DELIVERING,

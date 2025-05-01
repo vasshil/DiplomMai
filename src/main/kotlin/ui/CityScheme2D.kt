@@ -1,7 +1,6 @@
 package ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -17,12 +16,13 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import model.City
 import model.landscape.Building
-import ui.compose.city_creator.widgets.BuildingList
-import ui.compose.city_creator.CityCreatorMode
+import ui.compose.city_creator.widgets.buildings.BuildingList
+import ui.compose.city_creator.widgets.topbar.CityCreatorMode
 import ui.compose.city_creator.CityCreatorViewModel
 import ui.compose.city_creator.CitySchemeMode
+import ui.compose.city_creator.widgets.delivery_panel.drones.DronesList
 import ui.compose.city_creator.widgets.topbar.TopBar
-import ui.compose.common.Scheme2D
+import ui.compose.common.SchemeView
 
 @Composable
 @Preview
@@ -48,7 +48,7 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
         ) {
 
             TopBar(
-                modifier = Modifier.background(Color.LightGray),
+                modifier = Modifier,
                 mousePosition = mousePosition,
                 editorMode = editorMode,
                 saveCity = {
@@ -68,11 +68,13 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                 }
             )
 
+            Divider(color = Color.Black, modifier = Modifier.height(1.dp).fillMaxWidth())
+
             Row(
                 modifier = Modifier,
             ) {
 
-                Scheme2D(
+                SchemeView(
                     modifier = Modifier.width(width = 600.dp).weight(1f).fillMaxHeight(),
                     city = city,
                     cityCreatorMode = editorMode,
@@ -131,23 +133,39 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
 
                 }
 
-                if (schemeMode == CitySchemeMode.EDITOR) {
-                    Divider(color = Color.Black, modifier = Modifier.width(1.dp).fillMaxHeight())
+                Divider(color = Color.Black, modifier = Modifier.width(1.dp).fillMaxHeight())
 
-                    BuildingList(
-                        modifier = Modifier.width(250.dp).fillMaxHeight(),
-                        city = city,
-                        onFocusChange = { focused, id ->
-                            focusedBuildingId = if (!focused) -1 else id
-                        },
-                        onBuildingChanged = { changedBuilding ->
-                            viewModel.updateBuilding(changedBuilding)
+                when (schemeMode) {
+                    CitySchemeMode.EDITOR -> {
+                        BuildingList(
+                            modifier = Modifier.width(250.dp).fillMaxHeight(),
+                            city = city,
+                            onFocusChange = { focused, id ->
+                                focusedBuildingId = if (!focused) -1 else id
+                            },
+                            onBuildingChanged = { changedBuilding ->
+                                viewModel.updateBuilding(changedBuilding)
+                            }
+                        ) {
+                            newBuilding?.finish()
+                            newBuilding = null
+                            city.createGraphAtHeight()
                         }
-                    ) {
-                        newBuilding?.finish()
-                        newBuilding = null
-                        city.createGraphAtHeight()
                     }
+                    CitySchemeMode.VIEW -> {
+                        DronesList(
+                            modifier = Modifier.width(250.dp).fillMaxHeight(),
+                            city = city,
+                            onFocusChange = { focused, id ->
+//                                focusedBuildingId = if (!focused) -1 else id
+                            },
+                            onDroneChanged = { changedDrone ->
+//                                viewModel.updateBuilding(changedBuilding)
+                            }
+                        )
+                    }
+
+
                 }
 
             }

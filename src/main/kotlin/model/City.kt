@@ -1,7 +1,7 @@
 package model
 
 import androidx.compose.ui.geometry.Offset
-import com.jme3.math.Vector3f
+import model.drone.Drone
 import model.graph.Edge
 import model.graph.Graph3D
 import model.graph.Vertex
@@ -11,12 +11,12 @@ import java.io.File
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
-import kotlin.math.abs
 import kotlin.math.hypot
 
 data class City(
     val buildings: MutableList<Building> = mutableListOf(),
     var graph: Graph3D = Graph3D(),
+    var drones: MutableList<Drone> = mutableListOf(),
 ): Serializable {
 
     fun newBuilding(): Building {

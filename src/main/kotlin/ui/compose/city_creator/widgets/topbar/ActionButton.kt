@@ -24,7 +24,7 @@ fun ActionButton(
         modifier = modifier
             .size(48.dp)
             .padding(8.dp)
-            .background(Color.LightGray),
+            .background(Color.Transparent),
         onClick = onClick
     ) {
 

@@ -1,4 +1,4 @@
-package ui.compose.city_creator.widgets
+package ui.compose.city_creator.widgets.buildings
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

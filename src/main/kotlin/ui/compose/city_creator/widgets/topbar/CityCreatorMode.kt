@@ -1,4 +1,4 @@
-package ui.compose.city_creator
+package ui.compose.city_creator.widgets.topbar
 
 
 enum class CityCreatorMode {

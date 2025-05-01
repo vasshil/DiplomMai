@@ -12,14 +12,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ui.compose.city_creator.CityCreatorMode
 import ui.compose.city_creator.CitySchemeMode
 import ui.compose.common.BASE_STATION_COLOR
 import ui.compose.common.DESTINATION_COLOR
 import ui.compose.common.FOCUSED_BUILDING_COLOR
+import ui.compose.common.TOP_BAR_BG_COLOR
 
 
 @Composable
@@ -35,8 +34,7 @@ fun TopBar(
 ) {
 
     Row(
-        modifier = modifier
-            .background(Color.LightGray),
+        modifier = modifier.background(TOP_BAR_BG_COLOR)
     ) {
 
         if (schemeMode == CitySchemeMode.EDITOR) {

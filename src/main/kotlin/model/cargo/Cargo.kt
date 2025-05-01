@@ -1,6 +1,8 @@
 package model.cargo
 
+import java.io.Serializable
+
 data class Cargo(
     val timeCreation: Long = System.currentTimeMillis(),
-    val weight: Int // kg
-)
+    val weight: Double // kg
+): Serializable

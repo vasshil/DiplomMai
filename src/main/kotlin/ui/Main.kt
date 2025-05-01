@@ -8,16 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import com.jme3.math.Vector3f
 import model.City
-import model.graph.Edge
-import model.graph.Graph3D
-import model.landscape.Building
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.LineString
-import org.locationtech.jts.geom.Polygon
-import ui.compose.city_creator.CityCreatorViewModel
-import ui.compose.common.Scheme2D
+import ui.compose.common.SchemeView
 
 @Composable
 @Preview
@@ -31,7 +23,7 @@ fun App() {
 
     MaterialTheme {
         city?.let {
-            Scheme2D(
+            SchemeView(
                 modifier = Modifier.size(width = 600.dp, height = 500.dp),
                 city = it
             )
