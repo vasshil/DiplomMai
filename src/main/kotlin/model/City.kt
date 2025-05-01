@@ -41,13 +41,6 @@ data class City(
     fun createGraphAtHeight(height: Float = 0f): Graph3D {
         val graph = Graph3D()
 
-
-
-
-
-
-
-
         val buildingsGeometry = mutableListOf<Polygon>()
 
         for (building in buildings) {
@@ -133,7 +126,8 @@ data class City(
                 try {
                     file.inputStream().use {
                         (ObjectInputStream(it).readObject() as City).apply {
-//                            graph = createGraphAtHeight()
+                            graph = createGraphAtHeight()
+//                            println(graph.toString())
                         }
                     }
                 } catch (e: Exception) {

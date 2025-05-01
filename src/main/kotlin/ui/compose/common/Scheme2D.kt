@@ -28,12 +28,15 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.jme3.math.Vector3f
+import core.algo.LazyGraph3D
+import core.algo.fastestPath3D
 import core.distanceBetween
 import core.findShortestPathAStar
-import core.findShortestPathDijkstra
 import core.pathLength
+import core.to3D
 import model.City
 import model.graph.Vertex
+import model.landscape.Building
 import ui.compose.city_creator.CityCreatorMode
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -53,6 +56,8 @@ fun Scheme2D(
     onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
 ) {
 
+//    val currentCity by rememberUpdatedState(city)
+
     var mouseCoordinate by remember { mutableStateOf(Offset.Zero) }
 
     var scale by remember { mutableFloatStateOf(10f) } // Масштаб для перевода координат в пиксели
@@ -63,7 +68,8 @@ fun Scheme2D(
         scale *= zoomChange
 //        rotation += rotationChange
         offset += offsetChange
-        println("$scale, offsetChange:$offset")
+//        println("$scale, offsetChange:$offset")
+        println("$city")
 //        println("$zoomChange, offsetChange:$offsetChange, rotationChange:$rotationChange")
     }
 
@@ -80,7 +86,7 @@ fun Scheme2D(
             modifier = Modifier.fillMaxSize()
                 .background(color = SCHEME_BACKGROUND_COLOR)
                 .clipToBounds()
-                .pointerInput(Unit) {
+                .pointerInput(city, isEditorMode, focusedBuildingId) {
                     detectTapGestures { tapOffset ->
 
                         onClick()
@@ -98,17 +104,51 @@ fun Scheme2D(
                         val nearestVertex = city.graph.vertices.minByOrNull {
                             distanceBetween(it.position, clickedPosition)
                         }
+                        println("nearest: $clickedPosition / $nearestVertex / ${city}")
 
                         nearestVertex?.let { vertex ->
                             if (selectedVertex1 == null) {
                                 selectedVertex1 = vertex
                             } else if (selectedVertex2 == null && vertex != selectedVertex1) {
                                 selectedVertex2 = vertex
+
+
+
+
                                 // Находим кратчайший путь между двумя вершинами
-//                                shortestPath = findShortestPathDijkstra(selectedVertex1!!, selectedVertex2!!)
-                                shortestPath = findShortestPathAStar(city.graph, selectedVertex1!!, selectedVertex2!!)
-                                val len = pathLength(shortestPath)
-                                println("Длина пути ${len} м, потраченный заряд: ${len / 10}%")
+//                                shortestPath = findShortestPathAStar(city.graph, selectedVertex1!!, selectedVertex2!!)
+//                                val len = pathLength(shortestPath)
+//                                println("Длина пути ${len} м, потраченный заряд: ${len / 10}%")
+
+
+
+
+                                val bId1 = city.buildings.find { it.getKeyNodes().contains(selectedVertex1!!) }
+                                val bId2 = city.buildings.find { it.getKeyNodes().contains(selectedVertex2!!) }
+
+                                val start2D   = selectedVertex1
+                                val goal2D    = selectedVertex2
+                                val startYHgt    = 0f            // высота старта, м
+                                val goalYHgt     = 0f            // высота финиша, м
+
+                                // 1) уровни через каждый метр
+                                val maxH  = maxOf(
+                                    startYHgt, goalYHgt,
+                                    city.buildings.maxOfOrNull { it.height + Building.safeDistance } ?: 0f
+                                ).toInt()
+                                val levels = (0..maxH).map { it.toFloat() }
+
+                                // 2) ленивый граф + поиск
+                                val navigator = LazyGraph3D(city, levels)
+                                val route = fastestPath3D(
+                                    start2D!!.to3D(startYHgt, bId1!!.id),
+                                    goal2D!!.to3D(goalYHgt, bId2!!.id),
+                                    navigator
+                                )
+
+                                shortestPath = route.map { Vertex(it.buildingId, it.x, it.y, it.z) }
+
+
                             } else {
                                 // Сбрасываем выбор, если кликнули еще раз (начать с начала)
                                 selectedVertex1 = null
@@ -246,12 +286,7 @@ fun Scheme2D(
 
             }
 
-            if (isEditorMode) {
-                // место курсора
-                drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x - 10, mouseCoordinate.y), Offset(mouseCoordinate.x + 10, mouseCoordinate.y), 1f)
-                drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x, mouseCoordinate.y - 10), Offset(mouseCoordinate.x, mouseCoordinate.y + 10), 1f)
-            }
-            else {
+            if (!isEditorMode)  {
 
                 // Рисуем кратчайший путь, если он есть
                 if (shortestPath.isNotEmpty()) {
@@ -294,6 +329,10 @@ fun Scheme2D(
                 }
 
             }
+
+            // место курсора
+            drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x - 10, mouseCoordinate.y), Offset(mouseCoordinate.x + 10, mouseCoordinate.y), 1f)
+            drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x, mouseCoordinate.y - 10), Offset(mouseCoordinate.x, mouseCoordinate.y + 10), 1f)
         }
 
         if (showScaleButtons) {

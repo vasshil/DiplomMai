@@ -76,46 +76,51 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                     modifier = Modifier.width(width = 600.dp).weight(1f).fillMaxHeight(),
                     city = city,
                     cityCreatorMode = editorMode,
-                    isEditorMode = true,
+                    isEditorMode = schemeMode == CitySchemeMode.EDITOR,
                     drawBaseGraph = true,
                     focusedBuildingId = focusedBuildingId,
                     onClick = {
-                        when (editorMode) {
-                            CityCreatorMode.ADD_BUILDING -> {
-                                if (newBuilding == null) {
-                                    newBuilding = city.newBuilding()
-                                }
-                                if (newBuilding?.groundCoords?.isNotEmpty() == true &&
-                                    newBuilding?.groundCoords?.first()?.x == mousePosition.x &&
-                                    newBuilding?.groundCoords?.first()?.z == mousePosition.y) {
+                        if (schemeMode == CitySchemeMode.EDITOR) {
+                            when (editorMode) {
+                                CityCreatorMode.ADD_BUILDING -> {
+                                    if (newBuilding == null) {
+                                        newBuilding = city.newBuilding()
+                                    }
+                                    if (newBuilding?.groundCoords?.isNotEmpty() == true &&
+                                        newBuilding?.groundCoords?.first()?.x == mousePosition.x &&
+                                        newBuilding?.groundCoords?.first()?.z == mousePosition.y) {
 
-                                    newBuilding?.finish()
-                                    newBuilding = null
-                                    city.createGraphAtHeight()
+                                        newBuilding?.finish()
+                                        newBuilding = null
+                                        city.createGraphAtHeight()
+                                    }
+                                    newBuilding?.addGroundPoint(mousePosition.x, mousePosition.y)
                                 }
-                                newBuilding?.addGroundPoint(mousePosition.x, mousePosition.y)
-                            }
-                            CityCreatorMode.ADD_BASE_STATION -> {
-                                val nearestVertex = city.getNearestVertex(mousePosition)
-                                nearestVertex?.let {
-                                    it.isBaseStation = !it.isBaseStation
+                                CityCreatorMode.ADD_BASE_STATION -> {
+                                    val nearestVertex = city.getNearestVertex(mousePosition)
+                                    nearestVertex?.let {
+                                        it.isBaseStation = !it.isBaseStation
+                                    }
                                 }
-                            }
-                            CityCreatorMode.ADD_DESTINATION -> {
-                                val nearestVertex = city.getNearestVertex(mousePosition)
-                                nearestVertex?.let {
-                                    it.isDestination = !it.isDestination
+                                CityCreatorMode.ADD_DESTINATION -> {
+                                    val nearestVertex = city.getNearestVertex(mousePosition)
+                                    nearestVertex?.let {
+                                        it.isDestination = !it.isDestination
+                                    }
                                 }
-                            }
-                            CityCreatorMode.REMOVE -> {
-                                if (focusedBuildingId != -1L) {
-                                    city.removeBuilding(focusedBuildingId)
-                                    city.createGraphAtHeight()
-                                }
+                                CityCreatorMode.REMOVE -> {
+                                    if (focusedBuildingId != -1L) {
+                                        city.removeBuilding(focusedBuildingId)
+                                        city.createGraphAtHeight()
+                                    }
 
+                                }
+                                CityCreatorMode.NONE -> {}
                             }
-                            CityCreatorMode.NONE -> {}
+                        } else {
+                            // TODO: добавить
                         }
+
                     }
                 ) { position, pressed ->
                     mousePosition = position

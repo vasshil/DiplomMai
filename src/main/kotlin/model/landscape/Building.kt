@@ -29,6 +29,8 @@ data class Building(
         const val safeDistance = 1f
     }
 
+//    val safeDistanceCoords: MutableList<Vector3f> = mutableListOf()
+
 //    constructor(id: Long, groundCoords: MutableList<Vertex>, height: Float) : this(id, groundCoords.map { it.position }.toMutableList(), height)
 
     fun addGroundPoint(x: Float, z: Float) {
