@@ -19,9 +19,9 @@ class CityCreatorViewModel {
     val cityFlow = MutableStateFlow(City()
         .apply {
             drones = mutableListOf(
-                Drone(id = 0, status = DroneStatus.CHARGING, maxCargoCapacityMass = 4, cargos = mutableListOf(Cargo(0, 3.4)), currentPosition = Vector3f(30f, 40f, 20f)),
-                Drone(id = 1, status = DroneStatus.WAITING, batteryLevel = 10, maxCargoCapacityMass = 2, cargos = mutableListOf(Cargo(0, 0.4)), currentPosition = Vector3f(30f, 40f, 20f)),
-                Drone(id = 2, status = DroneStatus.WAITING, batteryLevel = 90, maxCargoCapacityMass = 5, cargos = mutableListOf(Cargo(0, 5.0)), currentPosition = Vector3f(30f, 40f, 20f)),
+                Drone(id = 0, status = DroneStatus.CHARGING, maxCargoCapacityMass = 4f, cargos = mutableListOf(Cargo(0, 3.4)), currentPosition = Vector3f(30f, 40f, 20f)),
+                Drone(id = 1, status = DroneStatus.WAITING, batteryLevel = 10, maxCargoCapacityMass = 2f, cargos = mutableListOf(Cargo(0, 0.4)), currentPosition = Vector3f(30f, 40f, 20f)),
+                Drone(id = 2, status = DroneStatus.WAITING, batteryLevel = 90, maxCargoCapacityMass = 5f, cargos = mutableListOf(Cargo(0, 5.0)), currentPosition = Vector3f(30f, 40f, 20f)),
             )
         }
 
@@ -51,6 +51,14 @@ class CityCreatorViewModel {
 //            )
 //        }
 
+    }
+
+    fun addDrone(drone: Drone) {
+        cityFlow.update {
+            it.apply {
+                this.drones += drone
+            }
+        }
     }
 
 

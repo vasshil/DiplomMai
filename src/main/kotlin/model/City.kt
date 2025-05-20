@@ -19,6 +19,10 @@ data class City(
     var drones: MutableList<Drone> = mutableListOf(),
 ): Serializable {
 
+    fun nextDroneId(): Long {
+        return (drones.maxOfOrNull { it.id } ?: -1) + 1
+    }
+
     fun newBuilding(): Building {
         val newId = if (buildings.isEmpty()) 0 else buildings.last().id + 1
         val newBuilding = Building(newId)

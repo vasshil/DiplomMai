@@ -13,7 +13,7 @@ data class Drone(
     val id: Long,
     var status: DroneStatus = DroneStatus.WAITING,
     var batteryLevel: Int = 100, // 0 - 100
-    val maxCargoCapacityMass: Int, // кг, макс вместимость
+    val maxCargoCapacityMass: Float, // кг, макс вместимость
     val cargos: MutableList<Cargo> = mutableListOf(),
     var currentDestination: Vector3f? = null,
     var currentWayPoint: MutableList<Vector3f> = mutableListOf(),

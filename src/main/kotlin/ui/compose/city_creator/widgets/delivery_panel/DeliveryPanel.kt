@@ -8,22 +8,22 @@ import androidx.compose.ui.graphics.Color
 import model.City
 import ui.compose.city_creator.widgets.delivery_panel.drones.DronesList
 
-@Composable
-fun DeliveryPanel(
-    modifier: Modifier = Modifier,
-    city: City,
-) {
-
-    DronesList(
-        modifier = modifier,
-        city = city,
-        onFocusChange = { focused, droneId ->
-
-        },
-        onDroneChanged = { drone ->
-
-        }
-
-    )
-
-}
+//@Composable
+//fun DeliveryPanel(
+//    modifier: Modifier = Modifier,
+//    city: City,
+//) {
+//
+//    DronesList(
+//        modifier = modifier,
+//        city = city,
+//        onFocusChange = { focused, droneId ->
+//
+//        },
+//        onDroneChanged = { drone ->
+//
+//        }
+//
+//    )
+//
+//}

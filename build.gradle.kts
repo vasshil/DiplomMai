@@ -75,6 +75,11 @@ dependencies {
     implementation("org.locationtech.jts:jts-core:1.20.0")
 
 //    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
+
+
+//    implementation("com.darkrockstudios:svg2bitmap:1.0.0")
+
+
 }
 
 compose.desktop {

@@ -24,3 +24,4 @@ fun Vector3f.toJTSCoordinate(): Coordinate = Coordinate(x.toDouble(), z.toDouble
 /** Быстро превращаем старую Vertex (XY) в 3-D-вершину конкретного уровня */
 fun Vertex.to3D(y: Float, buildingId: Long): Vertex3D =
     Vertex3D(buildingId, position.x, y, position.z)
+

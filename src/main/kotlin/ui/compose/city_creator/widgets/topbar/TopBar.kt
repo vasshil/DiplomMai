@@ -98,11 +98,13 @@ fun TopBar(
                 modifier = Modifier,
                 text = "x = ${mousePosition.x}",
                 fontSize = 10.sp,
+                lineHeight = 13.sp,
             )
             Text(
                 modifier = Modifier,
                 text = "y = ${mousePosition.y}",
                 fontSize = 10.sp,
+                lineHeight = 13.sp,
             )
 
         }

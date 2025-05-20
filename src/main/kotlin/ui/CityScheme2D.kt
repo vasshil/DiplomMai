@@ -22,6 +22,7 @@ import ui.compose.city_creator.CityCreatorViewModel
 import ui.compose.city_creator.CitySchemeMode
 import ui.compose.city_creator.widgets.delivery_panel.drones.DronesList
 import ui.compose.city_creator.widgets.topbar.TopBar
+import ui.compose.common.DIVIDER_COLOR
 import ui.compose.common.SchemeView
 
 @Composable
@@ -68,7 +69,7 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                 }
             )
 
-            Divider(color = Color.Black, modifier = Modifier.height(1.dp).fillMaxWidth())
+            Divider(color = DIVIDER_COLOR, modifier = Modifier.height(1.dp).fillMaxWidth())
 
             Row(
                 modifier = Modifier,
@@ -133,7 +134,7 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
 
                 }
 
-                Divider(color = Color.Black, modifier = Modifier.width(1.dp).fillMaxHeight())
+                Divider(color = DIVIDER_COLOR, modifier = Modifier.width(1.dp).fillMaxHeight())
 
                 when (schemeMode) {
                     CitySchemeMode.EDITOR -> {
@@ -161,6 +162,9 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                             },
                             onDroneChanged = { changedDrone ->
 //                                viewModel.updateBuilding(changedBuilding)
+                            },
+                            onDroneCreated = { newDrone ->
+                                viewModel.addDrone(newDrone)
                             }
                         )
                     }
