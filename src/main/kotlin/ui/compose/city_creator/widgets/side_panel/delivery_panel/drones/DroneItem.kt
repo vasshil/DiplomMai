@@ -1,4 +1,4 @@
-package ui.compose.city_creator.widgets.delivery_panel.drones
+package ui.compose.city_creator.widgets.side_panel.delivery_panel.drones
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,6 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import model.drone.Drone
@@ -61,8 +64,10 @@ fun DroneItem(
 
                     Text(
                         text = "Дрон id = ${drone.id}",
-                        fontSize = 10.sp,
+                        fontSize = 12.sp,
                         lineHeight = 15.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 5.dp)
                     )
                     Text(

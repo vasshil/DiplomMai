@@ -7,15 +7,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ViewDay
-import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ui.compose.city_creator.CitySchemeMode
+import ui.compose.city_creator.Scheme2DMode
 import ui.compose.common.MODE_SWITCH_BG_COLOR
 import ui.compose.common.MODE_SWITCH_SELECTED_COLOR
 import ui.compose.common.MODE_SWITCH_UNSELECTED_COLOR
@@ -23,16 +20,16 @@ import ui.compose.common.MODE_SWITCH_UNSELECTED_COLOR
 @Composable
 fun CitySchemeModeSwitch(
     modifier: Modifier = Modifier,
-    mode: CitySchemeMode,
-    onModeChanged: (CitySchemeMode) -> Unit
+    mode: Scheme2DMode,
+    onModeChanged: (Scheme2DMode) -> Unit
 ) {
 
     Row(
         modifier = modifier.background(color = MODE_SWITCH_BG_COLOR, shape = RoundedCornerShape(5.dp)).padding(5.dp),
     ) {
 
-        for (i in CitySchemeMode.entries.indices) {
-            val m = CitySchemeMode.entries[i]
+        for (i in Scheme2DMode.entries.indices) {
+            val m = Scheme2DMode.entries[i]
 
             Card(
                 modifier = Modifier.clickable { onModeChanged(m) },
@@ -55,7 +52,7 @@ fun CitySchemeModeSwitch(
                     )
                 }
             }
-            if (i != CitySchemeMode.entries.lastIndex) {
+            if (i != Scheme2DMode.entries.lastIndex) {
                 Spacer(modifier = Modifier.width(5.dp))
             }
         }

@@ -1,6 +1,6 @@
 package core.algo
 
-import model.City
+import model.FlyMap
 import model.landscape.Building
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.strtree.STRtree
@@ -13,7 +13,7 @@ import kotlin.math.hypot
  * @param levels    дискретные высоты (шаг 1 м: 0,1,2,…,maxH)
  */
 class LazyGraph3D(
-    private val city: City,
+    private val city: FlyMap,
     private val levels: List<Float>,
     private val climbRate: Float = 3f,      // м/с
     private val horizSpeed: Float = 10f     // м/с

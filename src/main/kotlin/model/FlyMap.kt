@@ -13,7 +13,7 @@ import java.io.ObjectOutputStream
 import java.io.Serializable
 import kotlin.math.hypot
 
-data class City(
+data class FlyMap(
     val buildings: MutableList<Building> = mutableListOf(),
     var graph: Graph3D = Graph3D(),
     var drones: MutableList<Drone> = mutableListOf(),
@@ -123,13 +123,13 @@ data class City(
 
     companion object {
         // Загрузка объекта из файла в формате JSON
-        fun loadFromFile(filePath: String): City? {
+        fun loadFromFile(filePath: String): FlyMap? {
 
             val file = File(filePath)
             return if (file.exists()) {
                 try {
                     file.inputStream().use {
-                        (ObjectInputStream(it).readObject() as City).apply {
+                        (ObjectInputStream(it).readObject() as FlyMap).apply {
                             graph = createGraphAtHeight()
 //                            println(graph.toString())
                         }

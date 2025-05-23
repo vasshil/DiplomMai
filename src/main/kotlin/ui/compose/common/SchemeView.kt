@@ -32,10 +32,10 @@ import core.algo.LazyGraph3D
 import core.algo.fastestPath3D
 import core.distanceBetween
 import core.to3D
-import model.City
+import model.FlyMap
 import model.graph.Vertex
 import model.landscape.Building
-import ui.compose.city_creator.widgets.topbar.CityCreatorMode
+import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
@@ -43,8 +43,8 @@ import kotlin.math.roundToInt
 @Composable
 fun SchemeView(
     modifier: Modifier = Modifier,
-    city: City,
-    cityCreatorMode: CityCreatorMode = CityCreatorMode.NONE,
+    city: FlyMap,
+    cityCreatorMode: CreatorModeEnum = CreatorModeEnum.NONE,
     isEditorMode: Boolean = false,
     drawBaseGraph: Boolean = true,
     drawFullGraph: Boolean = true,
@@ -220,7 +220,7 @@ fun SchemeView(
                     path = path,
                     color = if (focusedBuildingId == building.id) {
                         when(cityCreatorMode) {
-                            CityCreatorMode.REMOVE -> DELETE_FOCUSED_BUILDING_COLOR
+                            CreatorModeEnum.REMOVE -> DELETE_FOCUSED_BUILDING_COLOR
                             else -> FOCUSED_BUILDING_COLOR
                         }
                     } else BUILDING_COLOR,
@@ -339,7 +339,7 @@ fun SchemeView(
             ) {
 
                 IconButton(
-                    modifier = Modifier.size(48.dp).background(color = Color.Black, shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)),
+                    modifier = Modifier.size(48.dp).background(color = SCALE_BUTTONS_BG_COLOR, shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)),
                     onClick = {
                         scale += 0.5f
                     }
@@ -350,7 +350,7 @@ fun SchemeView(
                 }
 
                 IconButton(
-                    modifier = Modifier.size(48.dp).background(color = Color.Black, shape = RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp)),
+                    modifier = Modifier.size(48.dp).background(color = SCALE_BUTTONS_BG_COLOR, shape = RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp)),
                     onClick = {
                         if (scale > 1) scale -= 0.5f
                     }

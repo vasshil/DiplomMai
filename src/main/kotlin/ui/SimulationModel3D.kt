@@ -11,7 +11,6 @@ import com.jme3.post.FilterPostProcessor
 import com.jme3.renderer.RenderManager
 import com.jme3.renderer.queue.RenderQueue
 import com.jme3.scene.Geometry
-import com.jme3.scene.Mesh
 import com.jme3.scene.Node
 import com.jme3.scene.shape.Box
 import com.jme3.scene.shape.Line
@@ -19,16 +18,13 @@ import com.jme3.scene.shape.Sphere
 import com.jme3.shadow.DirectionalLightShadowFilter
 import com.jme3.shadow.DirectionalLightShadowRenderer
 import com.jme3.system.AppSettings
-import jme3tools.optimize.GeometryBatchFactory
-import model.City
+import model.FlyMap
 import model.graph.Edge
 import model.graph.Graph3D
 import model.graph.Vertex
 import model.landscape.Building
-import org.recast4j.recast.RecastBuilder
 import ui.compose.common.FOCUSED_BUILDING_COLOR
 import ui.compose.common.toColorRGBA
-import java.util.*
 
 
 class City1 : SimpleApplication() {
@@ -37,7 +33,7 @@ class City1 : SimpleApplication() {
 
         val ground = initEnvironment()
 
-        val city = City.loadFromFile("city1234.txt") ?: return
+        val city = FlyMap.loadFromFile("city1234.txt") ?: return
 
         val buildingsGeometry = mutableListOf<Geometry>()
 

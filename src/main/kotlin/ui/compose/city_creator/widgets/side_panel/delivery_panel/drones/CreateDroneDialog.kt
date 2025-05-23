@@ -1,4 +1,4 @@
-package ui.compose.city_creator.widgets.delivery_panel.drones
+package ui.compose.city_creator.widgets.side_panel.delivery_panel.drones
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*

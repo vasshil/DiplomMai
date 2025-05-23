@@ -17,11 +17,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ActionCheckButton(
     modifier: Modifier = Modifier,
-    buttonMode: CityCreatorMode,
-    selectedMode: CityCreatorMode,
+    buttonMode: CreatorModeEnum,
+    selectedMode: CreatorModeEnum,
     icon: ImageVector,
     tint: Color = Color.Black,
-    onEditorModeChange: (CityCreatorMode) -> Unit
+    onEditorModeChange: (CreatorModeEnum) -> Unit
 ) {
 
     val checked by derivedStateOf { buttonMode == selectedMode}
@@ -33,7 +33,7 @@ fun ActionCheckButton(
             .background(if (checked) Color.Gray else Color.Transparent),
         onClick = {
             println("click $buttonMode $selectedMode $checked")
-            onEditorModeChange(if (checked) CityCreatorMode.NONE else buttonMode)
+            onEditorModeChange(if (checked) CreatorModeEnum.NONE else buttonMode)
         }
     ) {
 

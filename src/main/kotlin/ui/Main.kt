@@ -8,17 +8,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import model.City
+import model.FlyMap
 import ui.compose.common.SchemeView
 
 @Composable
 @Preview
 fun App() {
 
-    var city by remember { mutableStateOf<City?>(null) }
+    var city by remember { mutableStateOf<FlyMap?>(null) }
 
     LaunchedEffect(Unit) {
-        city = City.loadFromFile("city1234.txt")
+        city = FlyMap.loadFromFile("city1234.txt")
     }
 
     MaterialTheme {

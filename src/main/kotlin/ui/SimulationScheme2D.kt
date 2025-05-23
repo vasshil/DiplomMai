@@ -7,34 +7,36 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
-import model.City
+import model.FlyMap
 import model.landscape.Building
-import ui.compose.city_creator.widgets.buildings.BuildingList
-import ui.compose.city_creator.widgets.topbar.CityCreatorMode
-import ui.compose.city_creator.CityCreatorViewModel
-import ui.compose.city_creator.CitySchemeMode
-import ui.compose.city_creator.widgets.delivery_panel.drones.DronesList
+import ui.compose.city_creator.widgets.side_panel.buildings.BuildingList
+import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
+import ui.compose.city_creator.CreatorViewModel
+import ui.compose.city_creator.Scheme2DMode
+import ui.compose.city_creator.widgets.side_panel.delivery_panel.DeliveryPanel
+import ui.compose.city_creator.widgets.topbar.SimulationMode
 import ui.compose.city_creator.widgets.topbar.TopBar
 import ui.compose.common.DIVIDER_COLOR
 import ui.compose.common.SchemeView
 
 @Composable
 @Preview
-fun CityScheme2D(viewModel: CityCreatorViewModel) {
-
-    var schemeMode by remember { mutableStateOf(CitySchemeMode.VIEW) }
-
-    var editorMode by remember { mutableStateOf(CityCreatorMode.NONE) }
+fun CityScheme2D(viewModel: CreatorViewModel) {
 
     val city by viewModel.cityFlow.collectAsState()
     println("collected city $city")
+
+    var schemeMode by remember { mutableStateOf(Scheme2DMode.VIEW) }
+
+    var simulationMode by remember { mutableStateOf(SimulationMode.PAUSE) }
+
+    var editorMode by remember { mutableStateOf(CreatorModeEnum.NONE) }
 
     var newBuilding: Building? by remember { mutableStateOf(null) }
 
@@ -51,14 +53,18 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
             TopBar(
                 modifier = Modifier,
                 mousePosition = mousePosition,
+                simulationMode = simulationMode,
                 editorMode = editorMode,
                 saveCity = {
                     city.saveToFile("city1234.txt")
                 },
                 loadCity = {
-                    City.loadFromFile("city1234.txt")?.let { loadedCity ->
+                    FlyMap.loadFromFile("city1234.txt")?.let { loadedCity ->
                         viewModel.setCity(loadedCity)
                     }
+                },
+                onSimulationModeChange = {
+                    mode -> simulationMode = mode
                 },
                 onEditorModeChange = { mode ->
                     editorMode = mode
@@ -79,13 +85,13 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                     modifier = Modifier.width(width = 600.dp).weight(1f).fillMaxHeight(),
                     city = city,
                     cityCreatorMode = editorMode,
-                    isEditorMode = schemeMode == CitySchemeMode.EDITOR,
+                    isEditorMode = schemeMode == Scheme2DMode.EDITOR,
                     drawBaseGraph = true,
                     focusedBuildingId = focusedBuildingId,
                     onClick = {
-                        if (schemeMode == CitySchemeMode.EDITOR) {
+                        if (schemeMode == Scheme2DMode.EDITOR) {
                             when (editorMode) {
-                                CityCreatorMode.ADD_BUILDING -> {
+                                CreatorModeEnum.ADD_BUILDING -> {
                                     if (newBuilding == null) {
                                         newBuilding = city.newBuilding()
                                     }
@@ -99,26 +105,26 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                                     }
                                     newBuilding?.addGroundPoint(mousePosition.x, mousePosition.y)
                                 }
-                                CityCreatorMode.ADD_BASE_STATION -> {
+                                CreatorModeEnum.ADD_BASE_STATION -> {
                                     val nearestVertex = city.getNearestVertex(mousePosition)
                                     nearestVertex?.let {
                                         it.isBaseStation = !it.isBaseStation
                                     }
                                 }
-                                CityCreatorMode.ADD_DESTINATION -> {
+                                CreatorModeEnum.ADD_DESTINATION -> {
                                     val nearestVertex = city.getNearestVertex(mousePosition)
                                     nearestVertex?.let {
                                         it.isDestination = !it.isDestination
                                     }
                                 }
-                                CityCreatorMode.REMOVE -> {
+                                CreatorModeEnum.REMOVE -> {
                                     if (focusedBuildingId != -1L) {
                                         city.removeBuilding(focusedBuildingId)
                                         city.createGraphAtHeight()
                                     }
 
                                 }
-                                CityCreatorMode.NONE -> {}
+                                CreatorModeEnum.NONE -> {}
                             }
                         } else {
                             // TODO: добавить
@@ -127,8 +133,7 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                     }
                 ) { position, pressed ->
                     mousePosition = position
-//                    println(position)
-                    if (editorMode != CityCreatorMode.ADD_BUILDING) {
+                    if (editorMode != CreatorModeEnum.ADD_BUILDING) {
                         focusedBuildingId = city.checkPointAt(position.x, position.y)?.id ?: -1
                     }
 
@@ -136,8 +141,9 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
 
                 Divider(color = DIVIDER_COLOR, modifier = Modifier.width(1.dp).fillMaxHeight())
 
+
                 when (schemeMode) {
-                    CitySchemeMode.EDITOR -> {
+                    Scheme2DMode.EDITOR -> {
                         BuildingList(
                             modifier = Modifier.width(250.dp).fillMaxHeight(),
                             city = city,
@@ -153,18 +159,15 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
                             city.createGraphAtHeight()
                         }
                     }
-                    CitySchemeMode.VIEW -> {
-                        DronesList(
-                            modifier = Modifier.width(250.dp).fillMaxHeight(),
+                    Scheme2DMode.VIEW -> {
+                        DeliveryPanel(
+                            modifier = Modifier,
                             city = city,
-                            onFocusChange = { focused, id ->
-//                                focusedBuildingId = if (!focused) -1 else id
-                            },
-                            onDroneChanged = { changedDrone ->
-//                                viewModel.updateBuilding(changedBuilding)
-                            },
-                            onDroneCreated = { newDrone ->
+                            addDrone = { newDrone ->
                                 viewModel.addDrone(newDrone)
+                            },
+                            addCargo = {
+
                             }
                         )
                     }
@@ -183,7 +186,7 @@ fun CityScheme2D(viewModel: CityCreatorViewModel) {
 
 fun main() = application {
 
-    val viewModel = CityCreatorViewModel()
+    val viewModel = CreatorViewModel()
 
     Window(
         onCloseRequest = ::exitApplication,

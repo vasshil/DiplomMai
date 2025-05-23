@@ -6,17 +6,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import model.City
+import model.FlyMap
 import model.cargo.Cargo
 import model.drone.Drone
 import model.drone.DroneStatus
 import model.landscape.Building
 
-class CityCreatorViewModel {
+class CreatorViewModel {
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    val cityFlow = MutableStateFlow(City()
+    val cityFlow = MutableStateFlow(FlyMap()
         .apply {
             drones = mutableListOf(
                 Drone(id = 0, status = DroneStatus.CHARGING, maxCargoCapacityMass = 4f, cargos = mutableListOf(Cargo(0, 3.4)), currentPosition = Vector3f(30f, 40f, 20f)),
@@ -27,7 +27,7 @@ class CityCreatorViewModel {
 
     )
 
-    fun setCity(city: City) {
+    fun setCity(city: FlyMap) {
         scope.launch {
             cityFlow.emit(city)
         }

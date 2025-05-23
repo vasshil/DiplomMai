@@ -1,10 +1,10 @@
 package ui.compose.city_creator.widgets.topbar
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -12,36 +12,36 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ui.compose.city_creator.CitySchemeMode
-import ui.compose.common.BASE_STATION_COLOR
-import ui.compose.common.DESTINATION_COLOR
-import ui.compose.common.FOCUSED_BUILDING_COLOR
-import ui.compose.common.TOP_BAR_BG_COLOR
+import ui.compose.city_creator.Scheme2DMode
+import ui.compose.common.*
 
 
 @Composable
 fun TopBar(
     modifier: Modifier = Modifier,
     mousePosition: Offset,
-    editorMode: CityCreatorMode,
+    simulationMode: SimulationMode,
+    editorMode: CreatorModeEnum,
     saveCity: () -> Unit,
     loadCity: () -> Unit,
-    onEditorModeChange: (CityCreatorMode) -> Unit,
-    schemeMode: CitySchemeMode,
-    onSchemeModeChange: (CitySchemeMode) -> Unit,
+    onSimulationModeChange: (SimulationMode) -> Unit,
+    onEditorModeChange: (CreatorModeEnum) -> Unit,
+    schemeMode: Scheme2DMode,
+    onSchemeModeChange: (Scheme2DMode) -> Unit,
 ) {
 
     Row(
         modifier = modifier.background(TOP_BAR_BG_COLOR)
     ) {
 
-        if (schemeMode == CitySchemeMode.EDITOR) {
+        if (schemeMode == Scheme2DMode.EDITOR) {
 
             ActionCheckButton(
                 modifier = Modifier,
-                buttonMode = CityCreatorMode.ADD_BUILDING,
+                buttonMode = CreatorModeEnum.ADD_BUILDING,
                 selectedMode = editorMode,
                 icon = Icons.Filled.AddHome,
                 tint = FOCUSED_BUILDING_COLOR,
@@ -50,7 +50,7 @@ fun TopBar(
 
             ActionCheckButton(
                 modifier = Modifier,
-                buttonMode = CityCreatorMode.ADD_BASE_STATION,
+                buttonMode = CreatorModeEnum.ADD_BASE_STATION,
                 selectedMode = editorMode,
                 icon = Icons.Filled.AddCircle,
                 tint = BASE_STATION_COLOR,
@@ -59,7 +59,7 @@ fun TopBar(
 
             ActionCheckButton(
                 modifier = Modifier,
-                buttonMode = CityCreatorMode.ADD_DESTINATION,
+                buttonMode = CreatorModeEnum.ADD_DESTINATION,
                 selectedMode = editorMode,
                 icon = Icons.Filled.AddCircle,
                 tint = DESTINATION_COLOR,
@@ -68,7 +68,7 @@ fun TopBar(
 
             ActionCheckButton(
                 modifier = Modifier,
-                buttonMode = CityCreatorMode.REMOVE,
+                buttonMode = CreatorModeEnum.REMOVE,
                 selectedMode = editorMode,
                 icon = Icons.Filled.Delete,
                 onEditorModeChange = onEditorModeChange
@@ -88,14 +88,35 @@ fun TopBar(
             loadCity()
         }
 
-        Spacer(Modifier.weight(1f))
+        Box(Modifier.weight(1f).align(Alignment.CenterVertically).padding(end = 16.dp)) {
+
+            if (schemeMode != Scheme2DMode.EDITOR) {
+
+                Button(
+                    modifier = Modifier.size(width = 56.dp, height = 36.dp).align(Alignment.CenterEnd),
+                    onClick = {
+                        onSimulationModeChange(if (simulationMode == SimulationMode.PAUSE) SimulationMode.PLAY else SimulationMode.PAUSE)
+                    },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = SIMULATION_MODE_BG_COLOR),
+                ) {
+                    Icon(
+                        modifier = Modifier.size(24.dp),
+                        imageVector = if (simulationMode == SimulationMode.PLAY) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                }
+
+            }
+
+        }
 
         Column(
             modifier = Modifier.align(Alignment.CenterVertically).padding(end = 8.dp)
         ) {
 
             Text(
-                modifier = Modifier,
+                modifier = Modifier.width(60.dp),
                 text = "x = ${mousePosition.x}",
                 fontSize = 10.sp,
                 lineHeight = 13.sp,
@@ -113,7 +134,10 @@ fun TopBar(
         CitySchemeModeSwitch(
             modifier = Modifier.align(Alignment.CenterVertically).padding(horizontal = 10.dp),
             mode = schemeMode,
-            onModeChanged = onSchemeModeChange
+            onModeChanged = {
+                onSchemeModeChange(it)
+                if (it == Scheme2DMode.EDITOR) onSimulationModeChange(SimulationMode.PAUSE)
+            }
         )
 
     }
