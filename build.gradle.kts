@@ -79,7 +79,8 @@ dependencies {
 
 //    implementation("com.darkrockstudios:svg2bitmap:1.0.0")
 
-
+    implementation("io.github.vinceglb:filekit-core:0.10.0-beta04")
+    implementation("io.github.vinceglb:filekit-dialogs-compose:0.10.0-beta04")
 }
 
 compose.desktop {

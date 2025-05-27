@@ -17,7 +17,7 @@ import model.drone.Drone
 @Composable
 fun DronesList(
     modifier: Modifier = Modifier,
-    city: FlyMap,
+    flyMap: FlyMap,
     onFocusChange: (focused: Boolean, droneId: Long) -> Unit,
     onDroneChanged: (Drone) -> Unit,
 ) {
@@ -26,7 +26,7 @@ fun DronesList(
         modifier = modifier.background(Color.White),
     ) {
 
-        city.drones.forEachIndexed { i, drone ->
+        flyMap.drones.forEachIndexed { i, drone ->
 
             item {
 

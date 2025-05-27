@@ -2,19 +2,22 @@ package ui.compose.common
 
 import androidx.compose.ui.graphics.Color
 import com.jme3.math.ColorRGBA
-import java.awt.Transparency
 
 // scheme colors
 val BUILDING_COLOR = Color(111, 130, 237)
 val FOCUSED_BUILDING_COLOR = Color(54, 79, 244)
+val NO_FLY_ZONE_FILL_COLOR = Color(244, 54, 76, 0x0000002d)
+val NO_FLY_ZONE_FOCUSED_DELETE_FILL_COLOR = Color(255, 16, 45, 0x000000ec)
+val NO_FLY_ZONE_BORDER_COLOR = Color(244, 54, 76, 0x00000099)
+val NO_FLY_ZONE_FOCUSED_BORDER_COLOR = Color(255, 16, 45, 0x000000ec)
 val DELETE_FOCUSED_BUILDING_COLOR = Color(221, 17, 17)
 val KEY_POINT_COLOR = Color(0, 0, 0)
 val EDGE_COLOR = Color(87, 87, 87)
 val SCHEME_BACKGROUND_COLOR = Color(250, 250, 250)
 val MESH_COLOR = Color.Gray
 val AXIS_COLOR = Color.Black
-val BASE_STATION_COLOR = Color(221, 17, 17)
-val DESTINATION_COLOR = Color(55, 126, 44)
+val CHARGE_STATION_COLOR = Color(54, 193, 244)
+val NO_FLY_ZONE_COLOR = Color(221, 17, 17)
 val SHORTEST_PATH_COLOR = Color(177, 92, 22)
 val MOUSE_POINT_COLOR = Color(0, 0, 0)
 
@@ -45,6 +48,13 @@ val DRONE_STATUS_CHARGING_COLOR = Color(66, 137, 43)
 val DRONE_STATUS_DELIVERING_COLOR = Color(177, 92, 22)
 val DRONE_STATUS_RETURNING_COLOR = Color(48, 72, 228)
 val DRONE_STATUS_ERROR_COLOR = Color(221, 17, 17)
+
+val CARGO_ICON_COLOR = Color(0, 0, 0)
+
+val CARGO_STATUS_WAITING_COLOR = Color(221, 187, 9)
+val CARGO_STATUS_ON_ROAD_COLOR = Color(177, 92, 22)
+val CARGO_STATUS_DONE_COLOR = Color(66, 137, 43)
+val CARGO_STATUS_ERROR_COLOR = Color(221, 17, 17)
 
 fun Color.toColorRGBA() = ColorRGBA(red, green, blue, alpha)
 fun Color.toColorRGBA(transparency: Float) = ColorRGBA(red, green, blue, transparency)

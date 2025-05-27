@@ -63,7 +63,7 @@ fun DroneItem(
                 ) {
 
                     Text(
-                        text = "Дрон id = ${drone.id}",
+                        text = "БПЛА id = ${drone.id}",
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
                         fontFamily = FontFamily.Monospace,

@@ -19,10 +19,13 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
@@ -35,6 +38,7 @@ import core.to3D
 import model.FlyMap
 import model.graph.Vertex
 import model.landscape.Building
+import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoints
 import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -43,14 +47,17 @@ import kotlin.math.roundToInt
 @Composable
 fun SchemeView(
     modifier: Modifier = Modifier,
-    city: FlyMap,
+    flyMap: FlyMap,
     cityCreatorMode: CreatorModeEnum = CreatorModeEnum.NONE,
     isEditorMode: Boolean = false,
     drawBaseGraph: Boolean = true,
     drawFullGraph: Boolean = true,
     focusedBuildingId: Long = -1,
+    focusedNFZId: Long = -1,
     onClick: (() -> Unit) = {},
     showScaleButtons: Boolean = true,
+    cargoPoints: CargoPoints,
+    onCargoPointsChanged: (CargoPoints) -> Unit,
     onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
 ) {
 
@@ -66,8 +73,6 @@ fun SchemeView(
         scale *= zoomChange
 //        rotation += rotationChange
         offset += offsetChange
-//        println("$scale, offsetChange:$offset")
-//        println("$zoomChange, offsetChange:$offsetChange, rotationChange:$rotationChange")
     }
 
     // Состояния для хранения двух выбранных вершин
@@ -83,7 +88,7 @@ fun SchemeView(
             modifier = Modifier.fillMaxSize()
                 .background(color = SCHEME_BACKGROUND_COLOR)
                 .clipToBounds()
-                .pointerInput(city, isEditorMode, focusedBuildingId) {
+                .pointerInput(flyMap, isEditorMode, focusedBuildingId) {
                     detectTapGestures { tapOffset ->
 
                         onClick()
@@ -98,21 +103,28 @@ fun SchemeView(
                         )
 
                         // Определяем ближайшую вершину к месту клика
-                        val nearestVertex = city.graph.vertices.minByOrNull {
+                        val nearestVertex = flyMap.graph.vertices.minByOrNull {
                             distanceBetween(it.position, clickedPosition)
                         }
-                        println("nearest: $clickedPosition / $nearestVertex / ${city}")
+                        println("nearest: $clickedPosition / $nearestVertex / ${flyMap}")
 
                         nearestVertex?.let { vertex ->
-                            if (selectedVertex1 == null) {
-                                selectedVertex1 = vertex
-                            } else if (selectedVertex2 == null && vertex != selectedVertex1) {
-                                selectedVertex2 = vertex
+
+                            if (cargoPoints is CargoPoints.Waiting1) {
+                                onCargoPointsChanged(CargoPoints.Waiting2(vertex.position))
+                            } else if (cargoPoints is CargoPoints.Waiting2) {
+                                onCargoPointsChanged(CargoPoints.TwoPointSelected(cargoPoints.start, vertex.position))
+                            } else {
+                                if (selectedVertex1 == null) {
+                                    selectedVertex1 = vertex
+                                }
+                                else if (selectedVertex2 == null && vertex != selectedVertex1) {
+                                    selectedVertex2 = vertex
 
 
 
 
-                                // Находим кратчайший путь между двумя вершинами
+                                    // Находим кратчайший путь между двумя вершинами
 //                                shortestPath = findShortestPathAStar(city.graph, selectedVertex1!!, selectedVertex2!!)
 //                                val len = pathLength(shortestPath)
 //                                println("Длина пути ${len} м, потраченный заряд: ${len / 10}%")
@@ -120,38 +132,42 @@ fun SchemeView(
 
 
 
-                                val bId1 = city.buildings.find { it.getKeyNodes().contains(selectedVertex1!!) }
-                                val bId2 = city.buildings.find { it.getKeyNodes().contains(selectedVertex2!!) }
+                                    val bId1 = flyMap.buildings.find { it.getKeyNodes().contains(selectedVertex1!!) }
+                                    val bId2 = flyMap.buildings.find { it.getKeyNodes().contains(selectedVertex2!!) }
 
-                                val start2D   = selectedVertex1
-                                val goal2D    = selectedVertex2
-                                val startYHgt    = 0f            // высота старта, м
-                                val goalYHgt     = 0f            // высота финиша, м
+                                    val start2D   = selectedVertex1
+                                    val goal2D    = selectedVertex2
+                                    val startYHgt    = 0f            // высота старта, м
+                                    val goalYHgt     = 0f            // высота финиша, м
 
-                                // 1) уровни через каждый метр
-                                val maxH  = maxOf(
-                                    startYHgt, goalYHgt,
-                                    city.buildings.maxOfOrNull { it.height + Building.safeDistance } ?: 0f
-                                ).toInt()
-                                val levels = (0..maxH).map { it.toFloat() }
+                                    // 1) уровни через каждый метр
+                                    val maxH  = maxOf(
+                                        startYHgt, goalYHgt,
+                                        flyMap.buildings.maxOfOrNull { it.height + Building.safeDistance } ?: 0f
+                                    ).toInt()
+                                    val levels = (0..maxH).map { it.toFloat() }
 
-                                // 2) ленивый граф + поиск
-                                val navigator = LazyGraph3D(city, levels)
-                                val route = fastestPath3D(
-                                    start2D!!.to3D(startYHgt, bId1!!.id),
-                                    goal2D!!.to3D(goalYHgt, bId2!!.id),
-                                    navigator
-                                )
+                                    // 2) ленивый граф + поиск
+                                    val navigator = LazyGraph3D(flyMap, levels)
+                                    val route = fastestPath3D(
+                                        start2D!!.to3D(startYHgt, bId1!!.id),
+                                        goal2D!!.to3D(goalYHgt, bId2!!.id),
+                                        navigator
+                                    )
 
-                                shortestPath = route.map { Vertex(it.buildingId, it.x, it.y, it.z) }
+                                    shortestPath = route.map { Vertex(it.buildingId, it.x, it.y, it.z) }
 
 
-                            } else {
-                                // Сбрасываем выбор, если кликнули еще раз (начать с начала)
-                                selectedVertex1 = null
-                                selectedVertex2 = null
-                                shortestPath = emptyList()
+                                }
+                                else {
+                                    // Сбрасываем выбор, если кликнули еще раз (начать с начала)
+                                    selectedVertex1 = null
+                                    selectedVertex2 = null
+                                    shortestPath = emptyList()
+                                }
                             }
+
+
                         }
                     }
                 }
@@ -168,8 +184,6 @@ fun SchemeView(
                     }
                 }
                 .transformable(state = state)
-
-
         ) {
             // Рисуем сетку
             for (x in 0..(size.width.toInt() / gridStep.toInt()) + 1) {
@@ -204,7 +218,7 @@ fun SchemeView(
             )
 
             // Рисуем здания
-            city.buildings.forEach { building ->
+            flyMap.buildings.forEach { building ->
 
                 val path = Path().apply {
                     this.moveTo(building.groundCoords.first().x * scale + offset.x, building.groundCoords.first().z * scale + offset.y)
@@ -230,7 +244,7 @@ fun SchemeView(
             }
 
             // Рисуем ребра графа
-            city.graph.edges.forEach { edge ->
+            flyMap.graph.edges.forEach { edge ->
 //            if (!(edge.isBase && !drawBaseGraph)) return@forEach
                 val startX = edge.vertex1.position.x * scale + offset.x
                 val startY = edge.vertex1.position.z * scale + offset.y
@@ -246,39 +260,52 @@ fun SchemeView(
             }
 
             // Рисуем вершины графа
-            city.graph.vertices.forEach { vertex ->
+            flyMap.graph.vertices.forEach { vertex ->
                 if (!drawBaseGraph && !drawFullGraph) return@forEach
 
                 val x = vertex.position.x * scale + offset.x
                 val y = vertex.position.z * scale + offset.y
 
-                val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 9f else 6f
+                val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 13f else 9f
 
-                if (vertex.isBaseStation && vertex.isDestination) {
+                val color = if (vertex.isChargeStation) CHARGE_STATION_COLOR else KEY_POINT_COLOR
+                drawCircle(
+                    color = color,
+                    radius = r,
+                    center = Offset(x, y)
+                )
+//                if (vertex.isChargeStation) {
+//                    drawImage(
+//                        image = useResource("icons/ic_bolt.png", ::loadImageBitmap).,
+//                        topLeft = Offset(x - 12, y - 12),
+//                    )
+//                }
 
-                    drawCircle(
-                        DESTINATION_COLOR,
-                        radius = r,
-                        center = Offset(x, y)
-                    )
-                    drawArc(
-                        color = BASE_STATION_COLOR,
-                        startAngle = -90f,
-                        sweepAngle = 180f,
-                        style = Fill,
-                        useCenter = false,
-                        size = Size(r * 2, r * 2),
-                        topLeft = Offset(x - r, y - r),
-                    )
-
-                } else {
-                    val color = if (vertex.isBaseStation) BASE_STATION_COLOR else if (vertex.isDestination) DESTINATION_COLOR else KEY_POINT_COLOR
-                    drawCircle(
-                        color = color,
-                        radius = r,
-                        center = Offset(x, y)
-                    )
-                }
+//                if (vertex.isBaseStation && vertex.isDestination) {
+//
+//                    drawCircle(
+//                        NO_FLY_ZONE_COLOR,
+//                        radius = r,
+//                        center = Offset(x, y)
+//                    )
+//                    drawArc(
+//                        color = CHARGE_STATION_COLOR,
+//                        startAngle = -90f,
+//                        sweepAngle = 180f,
+//                        style = Fill,
+//                        useCenter = false,
+//                        size = Size(r * 2, r * 2),
+//                        topLeft = Offset(x - r, y - r),
+//                    )
+//
+//                } else {
+//                    val color = if (vertex.isBaseStation) CHARGE_STATION_COLOR else if (vertex.isDestination) NO_FLY_ZONE_COLOR else KEY_POINT_COLOR
+//                    drawCircle(
+//                        color = color,
+//                        radius = r,
+//                        center = Offset(x, y)
+//                    )
+//                }
 
 
             }
@@ -308,7 +335,7 @@ fun SchemeView(
                     val y = it.position.z * scale + offset.y
 
                     drawCircle(
-                        color = BASE_STATION_COLOR,
+                        color = CHARGE_STATION_COLOR,
                         radius = 9f,
                         center = Offset(x, y)
                     )
@@ -319,10 +346,58 @@ fun SchemeView(
                     val y = it.position.z * scale + offset.y
 
                     drawCircle(
-                        color = DESTINATION_COLOR,
+                        color = NO_FLY_ZONE_COLOR,
                         radius = 9f,
                         center = Offset(x, y)
                     )
+                }
+
+            }
+
+
+            // бесполётные зоны
+            flyMap.noFlyZones.forEach { nfz ->
+
+                if (nfz.isActive) {
+
+                    val path = Path().apply {
+                        this.moveTo(nfz.groundCoords.first().x * scale + offset.x, nfz.groundCoords.first().z * scale + offset.y)
+                        nfz.groundCoords.forEach { coordinate ->
+                            lineTo(
+                                coordinate.x * scale + offset.x,
+                                coordinate.z * scale + offset.y
+                            )
+                        }
+                    }
+
+                    drawPath(
+                        path = path,
+                        color = if (focusedNFZId == nfz.id && cityCreatorMode == CreatorModeEnum.REMOVE) {
+                            NO_FLY_ZONE_FOCUSED_DELETE_FILL_COLOR
+                        } else NO_FLY_ZONE_FILL_COLOR,
+                        style = Fill
+                    )
+                    drawPath(
+                        path = path,
+                        color = if (focusedNFZId == nfz.id && cityCreatorMode != CreatorModeEnum.REMOVE) {
+                            NO_FLY_ZONE_FOCUSED_BORDER_COLOR
+                        } else NO_FLY_ZONE_BORDER_COLOR,
+//                    if (focusedBuildingId == building.id) {
+//                        when(cityCreatorMode) {
+//                            CreatorModeEnum.REMOVE -> DELETE_FOCUSED_BUILDING_COLOR
+//                            else -> FOCUSED_BUILDING_COLOR
+//                        }
+//                    } else BUILDING_COLOR,
+                        style = Stroke(
+                            width = if (focusedNFZId == nfz.id) 6f else 3f,
+                            cap = StrokeCap.Round,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(10f, 10f), // 10px линия, 10px пробел
+                                phase = 0f              // сдвиг, можно анимировать
+                            )
+                        )
+                    )
+
                 }
 
             }

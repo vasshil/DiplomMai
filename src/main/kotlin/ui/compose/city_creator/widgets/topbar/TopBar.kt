@@ -50,19 +50,19 @@ fun TopBar(
 
             ActionCheckButton(
                 modifier = Modifier,
-                buttonMode = CreatorModeEnum.ADD_BASE_STATION,
+                buttonMode = CreatorModeEnum.ADD_CHARGE_STATION,
                 selectedMode = editorMode,
-                icon = Icons.Filled.AddCircle,
-                tint = BASE_STATION_COLOR,
+                icon = Icons.Filled.Bolt,
+                tint = CHARGE_STATION_COLOR,
                 onEditorModeChange = onEditorModeChange
             )
 
             ActionCheckButton(
                 modifier = Modifier,
-                buttonMode = CreatorModeEnum.ADD_DESTINATION,
+                buttonMode = CreatorModeEnum.ADD_NO_FLY_ZONE,
                 selectedMode = editorMode,
-                icon = Icons.Filled.AddCircle,
-                tint = DESTINATION_COLOR,
+                icon = Icons.Filled.Block,
+                tint = NO_FLY_ZONE_COLOR,
                 onEditorModeChange = onEditorModeChange
             )
 

@@ -1,22 +1,29 @@
 package model
 
 import androidx.compose.ui.geometry.Offset
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.openFileSaver
+import io.github.vinceglb.filekit.write
+import io.github.vinceglb.filekit.writeString
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import model.cargo.Cargo
 import model.drone.Drone
 import model.graph.Edge
 import model.graph.Graph3D
 import model.graph.Vertex
 import model.landscape.Building
+import model.landscape.NoFlyZone
 import org.locationtech.jts.geom.*
-import java.io.File
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
-import java.io.Serializable
+import java.io.*
 import kotlin.math.hypot
 
 data class FlyMap(
     val buildings: MutableList<Building> = mutableListOf(),
+    val noFlyZones: MutableList<NoFlyZone> = mutableListOf(),
     var graph: Graph3D = Graph3D(),
     var drones: MutableList<Drone> = mutableListOf(),
+    var cargos: MutableList<Cargo> = mutableListOf(),
 ): Serializable {
 
     fun nextDroneId(): Long {
@@ -24,7 +31,7 @@ data class FlyMap(
     }
 
     fun newBuilding(): Building {
-        val newId = if (buildings.isEmpty()) 0 else buildings.last().id + 1
+        val newId = (buildings.maxOfOrNull { it.id } ?: -1) + 1
         val newBuilding = Building(newId)
         buildings.add(newBuilding)
         return buildings.last()
@@ -32,6 +39,17 @@ data class FlyMap(
 
     fun removeBuilding(id: Long) {
         buildings.removeIf { it.id == id }
+    }
+
+    fun newNFZ(): NoFlyZone {
+        val newId = (noFlyZones.maxOfOrNull { it.id } ?: -1) + 1
+        val newNFZ = NoFlyZone(newId, true)
+        noFlyZones.add(newNFZ)
+        return noFlyZones.last()
+    }
+
+    fun removeNFZ(id: Long) {
+        noFlyZones.removeIf { it.id == id }
     }
 
     fun getNearestVertex(mouse: Offset): Vertex? {
@@ -97,26 +115,46 @@ data class FlyMap(
 
 
     // Сохранение объекта в файл в формате JSON
-    fun saveToFile(filePath: String) {
+    fun saveToFile(scope: CoroutineScope) {
 
-        File(filePath).outputStream().use {
-            ObjectOutputStream(it).writeObject(this)
+        scope.launch {
+            val out = FileKit.openFileSaver(
+                suggestedName = "flyMap",
+                extension     = "txt"
+            )
+            out?.let { f ->
+                // сериализуем во временный буфер
+                val data = ByteArrayOutputStream().use { buf ->
+                    ObjectOutputStream(buf).use { oos -> oos.writeObject(this@FlyMap) }
+                    buf.toByteArray()
+                }
+                // и пишем байты в выбранное место
+                f.write(data)
+            }
         }
 
-//        val json = Json {
-//            serializersModule = SerializersModule {
-//                contextual(Vector3fSerializer) // Регистрируем кастомный сериализатор
-//            }
-//        }
-//        val jsonString = json.encodeToString(this)
-//        File(filePath).writeText(jsonString)
+
     }
 
-    fun checkPointAt(x: Float, y: Float): Building? {
+    fun checkBuildingPointAt(x: Float, y: Float): Building? {
         buildings.forEach {
-            if (it.toJTSPolygon().contains(GeometryFactory().createPoint(Coordinate(x.toDouble(), y.toDouble())))) {
-                return it
+            if (it.groundCoords.size >= 3) {
+                if (it.toJTSPolygon().contains(GeometryFactory().createPoint(Coordinate(x.toDouble(), y.toDouble())))) {
+                    return it
+                }
             }
+        }
+        return null
+    }
+
+    fun checkNFZPointAt(x: Float, y: Float): NoFlyZone? {
+        noFlyZones.forEach {
+            if (it.groundCoords.size >= 3) {
+                if (it.toJTSPolygon().contains(GeometryFactory().createPoint(Coordinate(x.toDouble(), y.toDouble())))) {
+                    return it
+                }
+            }
+
         }
         return null
     }

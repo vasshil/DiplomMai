@@ -13,13 +13,20 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.path
+import kotlinx.coroutines.launch
 import model.FlyMap
 import model.landscape.Building
-import ui.compose.city_creator.widgets.side_panel.buildings.BuildingList
+import model.landscape.NoFlyZone
+import ui.compose.city_creator.widgets.side_panel.landscape.LandscapeList
 import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
 import ui.compose.city_creator.CreatorViewModel
 import ui.compose.city_creator.Scheme2DMode
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.DeliveryPanel
+import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoints
 import ui.compose.city_creator.widgets.topbar.SimulationMode
 import ui.compose.city_creator.widgets.topbar.TopBar
 import ui.compose.common.DIVIDER_COLOR
@@ -29,8 +36,11 @@ import ui.compose.common.SchemeView
 @Preview
 fun CityScheme2D(viewModel: CreatorViewModel) {
 
-    val city by viewModel.cityFlow.collectAsState()
-    println("collected city $city")
+    val scope = rememberCoroutineScope()
+
+    val flyMap by viewModel.flyMapFlow.collectAsState()
+
+    println("collected fly map ${flyMap.noFlyZones.toTypedArray().contentToString()}")
 
     var schemeMode by remember { mutableStateOf(Scheme2DMode.VIEW) }
 
@@ -40,9 +50,18 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
     var newBuilding: Building? by remember { mutableStateOf(null) }
 
+    var newNFZ: NoFlyZone? by remember { mutableStateOf(null) }
+
     var focusedBuildingId by remember { mutableLongStateOf(-1) }
 
+    var focusedNFZId by remember { mutableLongStateOf(-1) }
+
     var mousePosition by remember { mutableStateOf(Offset.Zero) }
+
+    // точки отправки и назначения для нового груза
+    var cargoPoints by remember { mutableStateOf<CargoPoints>(CargoPoints.Idle) }
+
+
 
     MaterialTheme {
 
@@ -56,11 +75,20 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                 simulationMode = simulationMode,
                 editorMode = editorMode,
                 saveCity = {
-                    city.saveToFile("city1234.txt")
+                    flyMap.saveToFile(scope)
                 },
                 loadCity = {
-                    FlyMap.loadFromFile("city1234.txt")?.let { loadedCity ->
-                        viewModel.setCity(loadedCity)
+                    scope.launch {
+                        val file = FileKit.openFilePicker(
+                            type = FileKitType.File(listOf("txt"))
+                        )
+                        println("file read ${file?.path}")
+                        file?.let {
+                            FlyMap.loadFromFile(it.path)?.let { loadedCity ->
+                                viewModel.setCity(loadedCity)
+                            }
+                        }
+
                     }
                 },
                 onSimulationModeChange = {
@@ -83,17 +111,19 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
                 SchemeView(
                     modifier = Modifier.width(width = 600.dp).weight(1f).fillMaxHeight(),
-                    city = city,
+                    flyMap = flyMap,
                     cityCreatorMode = editorMode,
                     isEditorMode = schemeMode == Scheme2DMode.EDITOR,
                     drawBaseGraph = true,
+                    drawFullGraph = false,
                     focusedBuildingId = focusedBuildingId,
+                    focusedNFZId = focusedNFZId,
                     onClick = {
                         if (schemeMode == Scheme2DMode.EDITOR) {
                             when (editorMode) {
                                 CreatorModeEnum.ADD_BUILDING -> {
                                     if (newBuilding == null) {
-                                        newBuilding = city.newBuilding()
+                                        newBuilding = flyMap.newBuilding()
                                     }
                                     if (newBuilding?.groundCoords?.isNotEmpty() == true &&
                                         newBuilding?.groundCoords?.first()?.x == mousePosition.x &&
@@ -101,26 +131,38 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
                                         newBuilding?.finish()
                                         newBuilding = null
-                                        city.createGraphAtHeight()
+                                        flyMap.createGraphAtHeight()
                                     }
                                     newBuilding?.addGroundPoint(mousePosition.x, mousePosition.y)
                                 }
-                                CreatorModeEnum.ADD_BASE_STATION -> {
-                                    val nearestVertex = city.getNearestVertex(mousePosition)
+                                CreatorModeEnum.ADD_CHARGE_STATION -> {
+                                    val nearestVertex = flyMap.getNearestVertex(mousePosition)
                                     nearestVertex?.let {
-                                        it.isBaseStation = !it.isBaseStation
+                                        it.isChargeStation = !it.isChargeStation
                                     }
                                 }
-                                CreatorModeEnum.ADD_DESTINATION -> {
-                                    val nearestVertex = city.getNearestVertex(mousePosition)
-                                    nearestVertex?.let {
-                                        it.isDestination = !it.isDestination
+                                CreatorModeEnum.ADD_NO_FLY_ZONE -> {
+                                    if (newNFZ == null) {
+                                        newNFZ = flyMap.newNFZ()
                                     }
+                                    if (newNFZ?.groundCoords?.isNotEmpty() == true &&
+                                        newNFZ?.groundCoords?.first()?.x == mousePosition.x &&
+                                        newNFZ?.groundCoords?.first()?.z == mousePosition.y) {
+
+                                        newNFZ?.finish()
+                                        newNFZ = null
+//                                        flyMap.createGraphAtHeight()
+                                    }
+                                    newNFZ?.addGroundPoint(mousePosition.x, mousePosition.y)
                                 }
                                 CreatorModeEnum.REMOVE -> {
                                     if (focusedBuildingId != -1L) {
-                                        city.removeBuilding(focusedBuildingId)
-                                        city.createGraphAtHeight()
+                                        flyMap.removeBuilding(focusedBuildingId)
+                                        flyMap.createGraphAtHeight()
+                                    }
+                                    if (focusedNFZId != -1L) {
+                                        flyMap.removeNFZ(focusedNFZId)
+                                        flyMap.createGraphAtHeight()
                                     }
 
                                 }
@@ -130,11 +172,20 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                             // TODO: добавить
                         }
 
+                    },
+                    cargoPoints = cargoPoints,
+                    onCargoPointsChanged = { newCargoPoints ->
+                        cargoPoints = newCargoPoints
                     }
                 ) { position, pressed ->
                     mousePosition = position
-                    if (editorMode != CreatorModeEnum.ADD_BUILDING) {
-                        focusedBuildingId = city.checkPointAt(position.x, position.y)?.id ?: -1
+                    if (editorMode != CreatorModeEnum.ADD_BUILDING && editorMode != CreatorModeEnum.ADD_NO_FLY_ZONE && editorMode != CreatorModeEnum.ADD_CHARGE_STATION) {
+                        focusedNFZId = flyMap.checkNFZPointAt(position.x, position.y)?.id ?: -1
+                        focusedBuildingId = flyMap.checkBuildingPointAt(position.x, position.y)?.id ?: -1
+
+                        // приоритет фокуса на бесполетной зоне
+                        if (focusedNFZId != -1L) focusedBuildingId = -1
+
                     }
 
                 }
@@ -144,30 +195,46 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
                 when (schemeMode) {
                     Scheme2DMode.EDITOR -> {
-                        BuildingList(
+                        LandscapeList(
                             modifier = Modifier.width(250.dp).fillMaxHeight(),
-                            city = city,
-                            onFocusChange = { focused, id ->
+                            flyMap = flyMap,
+                            onBuildingFocusChange = { focused, id ->
                                 focusedBuildingId = if (!focused) -1 else id
+                            },
+                            onNFZFocusChange = { focused, id ->
+                                focusedNFZId = if (!focused) -1 else id
                             },
                             onBuildingChanged = { changedBuilding ->
                                 viewModel.updateBuilding(changedBuilding)
+                            },
+                            onBuildingFinished = {
+                                newBuilding?.finish()
+                                newBuilding = null
+                                flyMap.createGraphAtHeight()
+                            },
+                            onNFZChanged = { changedNFZ ->
+                                viewModel.updateNoFlyZone(changedNFZ)
+                                flyMap.createGraphAtHeight()
+                            },
+                            onNFZFinished = {
+                                newNFZ?.finish()
+                                newNFZ = null
                             }
-                        ) {
-                            newBuilding?.finish()
-                            newBuilding = null
-                            city.createGraphAtHeight()
-                        }
+                        )
                     }
                     Scheme2DMode.VIEW -> {
                         DeliveryPanel(
                             modifier = Modifier,
-                            city = city,
+                            flyMap = flyMap,
                             addDrone = { newDrone ->
                                 viewModel.addDrone(newDrone)
                             },
-                            addCargo = {
-
+                            addCargo = { newCargo ->
+                                viewModel.addCargo(newCargo)
+                            },
+                            cargoPoints = cargoPoints,
+                            onCargoPointsChanged = { newCargoPoints ->
+                                cargoPoints = newCargoPoints
                             }
                         )
                     }
@@ -178,6 +245,11 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
             }
 
         }
+
+//        if (showOpenFile) OpenTxtDialog(window) { file ->
+//            showOpenFile = false
+//            file?.readText()?.let { /* обработка */ }
+//        }
 
     }
 

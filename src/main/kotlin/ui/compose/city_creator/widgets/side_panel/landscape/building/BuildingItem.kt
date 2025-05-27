@@ -1,4 +1,4 @@
-package ui.compose.city_creator.widgets.side_panel.buildings
+package ui.compose.city_creator.widgets.side_panel.landscape.building
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -52,46 +52,50 @@ fun BuildingItem(
                     text = "Точек: ${building.groundCoords.size - 1}",
                     fontSize = 10.sp
                 )
-                if (building.groundCoords.first() != building.groundCoords.last()) {
-                    // полигон здания закончен
-                    Button(
-                        modifier = Modifier.padding(start = 5.dp),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = BUTTON_COLOR),
-                        onClick = {
-                            onFinished()
-                        }) {
-                        Text("Готово")
-                    }
-
-                } else {
-
-                    Row(
-                        modifier = Modifier.padding(top = 5.dp).background(color = TEXT_FIELD_COLOR, shape = CircleShape),
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(vertical = 3.dp),
-                        ) {
-                            BasicTextField(
-                                modifier = Modifier.align(Alignment.CenterEnd).padding(start = 5.dp),
-                                value = building.height.toString(),
-                                onValueChange = {
-                                    it.toFloatOrNull()?.let { height ->
-                                        onChanged(building.copy(height = height))
-                                    }
-                                },
-                            )
-                            Text(
-                                text = "м",
-                                fontSize = 14.sp,
-                                color = Color(159, 159, 159),
-                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 10.dp)
-                            )
+                if (building.groundCoords.size > 2) {
+                    if (building.groundCoords.first() != building.groundCoords.last()) {
+                        // полигон здания закончен
+                        Button(
+                            modifier = Modifier.padding(start = 5.dp),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = BUTTON_COLOR),
+                            onClick = {
+                                onFinished()
+                            }) {
+                            Text("Готово")
                         }
 
+                    } else {
+
+                        Row(
+                            modifier = Modifier.padding(top = 5.dp, start = 5.dp).background(color = TEXT_FIELD_COLOR, shape = CircleShape),
+                        ) {
+                            Box(modifier = Modifier.width(5.dp))
+                            Box(
+                                modifier = Modifier.padding(vertical = 3.dp),
+                            ) {
+                                BasicTextField(
+                                    modifier = Modifier.align(Alignment.CenterEnd).padding(start = 5.dp),
+                                    value = building.height.toString(),
+                                    onValueChange = {
+                                        it.toFloatOrNull()?.let { height ->
+                                            onChanged(building.copy(height = height))
+                                        }
+                                    },
+                                )
+                                Text(
+                                    text = "м",
+                                    fontSize = 14.sp,
+                                    color = Color(159, 159, 159),
+                                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 10.dp)
+                                )
+                            }
+
+                        }
+
+
                     }
-
-
                 }
+
 
             }
 
