@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -36,8 +35,9 @@ import core.algo.fastestPath3D
 import core.distanceBetween
 import core.to3D
 import model.FlyMap
-import model.graph.Vertex
+import model.graph.FlyMapVertex
 import model.landscape.Building
+import ui.compose.city_creator.CreatorViewModel
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoints
 import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
 import kotlin.math.hypot
@@ -47,6 +47,7 @@ import kotlin.math.roundToInt
 @Composable
 fun SchemeView(
     modifier: Modifier = Modifier,
+    viewModel: CreatorViewModel,
     flyMap: FlyMap,
     cityCreatorMode: CreatorModeEnum = CreatorModeEnum.NONE,
     isEditorMode: Boolean = false,
@@ -61,8 +62,6 @@ fun SchemeView(
     onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
 ) {
 
-//    val currentCity by rememberUpdatedState(city)
-
     var mouseCoordinate by remember { mutableStateOf(Offset.Zero) }
 
     var scale by remember { mutableFloatStateOf(10f) } // Масштаб для перевода координат в пиксели
@@ -76,9 +75,9 @@ fun SchemeView(
     }
 
     // Состояния для хранения двух выбранных вершин
-    var selectedVertex1 by remember { mutableStateOf<Vertex?>(null) }
-    var selectedVertex2 by remember { mutableStateOf<Vertex?>(null) }
-    var shortestPath by remember { mutableStateOf<List<Vertex>>(emptyList()) }
+    var selectedVertex1 by remember { mutableStateOf<FlyMapVertex?>(null) }
+    var selectedVertex2 by remember { mutableStateOf<FlyMapVertex?>(null) }
+    var shortestPath by remember { mutableStateOf<List<FlyMapVertex>>(emptyList()) }
 
     Box(
         modifier = modifier
@@ -103,8 +102,10 @@ fun SchemeView(
                         )
 
                         // Определяем ближайшую вершину к месту клика
-                        val nearestVertex = flyMap.graph.vertices.minByOrNull {
-                            distanceBetween(it.position, clickedPosition)
+                        val nearestVertex = flyMap.buildings.map {
+                            it.findNearestSafeVertex(clickedPosition)
+                        }.minByOrNull {
+                            distanceBetween(it?.position, clickedPosition)
                         }
                         println("nearest: $clickedPosition / $nearestVertex / ${flyMap}")
 
@@ -155,7 +156,7 @@ fun SchemeView(
                                         navigator
                                     )
 
-                                    shortestPath = route.map { Vertex(it.buildingId, it.x, it.y, it.z) }
+                                    shortestPath = route.map { FlyMapVertex(it.buildingId, it.x, it.y, it.z) }
 
 
                                 }
@@ -241,74 +242,55 @@ fun SchemeView(
                     style = Fill
                 )
 
+                // безопасные вершины у здания
+                building.safeDistanceCoords.forEach { vertex ->
+                    val x = vertex.position.x * scale + offset.x
+                    val y = vertex.position.z * scale + offset.y
+
+                    val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 13f else 9f
+
+                    val color = if (vertex.isChargeStation) CHARGE_STATION_COLOR else KEY_POINT_COLOR
+                    drawCircle(
+                        color = color,
+                        radius = r,
+                        center = Offset(x, y)
+                    )
+                }
+
             }
 
             // Рисуем ребра графа
-            flyMap.graph.edges.forEach { edge ->
-//            if (!(edge.isBase && !drawBaseGraph)) return@forEach
-                val startX = edge.vertex1.position.x * scale + offset.x
-                val startY = edge.vertex1.position.z * scale + offset.y
-                val endX = edge.vertex2.position.x * scale + offset.x
-                val endY = edge.vertex2.position.z * scale + offset.y
-
-                drawLine(
-                    color = EDGE_COLOR,
-                    start = Offset(startX, startY),
-                    end = Offset(endX, endY),
-                    strokeWidth = 2f
-                )
-            }
-
-            // Рисуем вершины графа
-            flyMap.graph.vertices.forEach { vertex ->
-                if (!drawBaseGraph && !drawFullGraph) return@forEach
-
-                val x = vertex.position.x * scale + offset.x
-                val y = vertex.position.z * scale + offset.y
-
-                val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 13f else 9f
-
-                val color = if (vertex.isChargeStation) CHARGE_STATION_COLOR else KEY_POINT_COLOR
-                drawCircle(
-                    color = color,
-                    radius = r,
-                    center = Offset(x, y)
-                )
-//                if (vertex.isChargeStation) {
-//                    drawImage(
-//                        image = useResource("icons/ic_bolt.png", ::loadImageBitmap).,
-//                        topLeft = Offset(x - 12, y - 12),
-//                    )
-//                }
-
-//                if (vertex.isBaseStation && vertex.isDestination) {
+//            flyMap.graph.edges.forEach { edge ->
+////            if (!(edge.isBase && !drawBaseGraph)) return@forEach
+//                val startX = edge.vertex1.position.x * scale + offset.x
+//                val startY = edge.vertex1.position.z * scale + offset.y
+//                val endX = edge.vertex2.position.x * scale + offset.x
+//                val endY = edge.vertex2.position.z * scale + offset.y
 //
-//                    drawCircle(
-//                        NO_FLY_ZONE_COLOR,
-//                        radius = r,
-//                        center = Offset(x, y)
-//                    )
-//                    drawArc(
-//                        color = CHARGE_STATION_COLOR,
-//                        startAngle = -90f,
-//                        sweepAngle = 180f,
-//                        style = Fill,
-//                        useCenter = false,
-//                        size = Size(r * 2, r * 2),
-//                        topLeft = Offset(x - r, y - r),
-//                    )
+//                drawLine(
+//                    color = EDGE_COLOR,
+//                    start = Offset(startX, startY),
+//                    end = Offset(endX, endY),
+//                    strokeWidth = 2f
+//                )
+//            }
 //
-//                } else {
-//                    val color = if (vertex.isBaseStation) CHARGE_STATION_COLOR else if (vertex.isDestination) NO_FLY_ZONE_COLOR else KEY_POINT_COLOR
-//                    drawCircle(
-//                        color = color,
-//                        radius = r,
-//                        center = Offset(x, y)
-//                    )
-//                }
-
-
-            }
+//            // Рисуем вершины графа
+//            flyMap.graph.vertices.forEach { vertex ->
+//                if (!drawBaseGraph && !drawFullGraph) return@forEach
+//
+//                val x = vertex.position.x * scale + offset.x
+//                val y = vertex.position.z * scale + offset.y
+//
+//                val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 13f else 9f
+//
+//                val color = if (vertex.isChargeStation) CHARGE_STATION_COLOR else KEY_POINT_COLOR
+//                drawCircle(
+//                    color = color,
+//                    radius = r,
+//                    center = Offset(x, y)
+//                )
+//            }
 
             if (!isEditorMode)  {
 

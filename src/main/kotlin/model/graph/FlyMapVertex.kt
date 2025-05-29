@@ -5,10 +5,10 @@ import org.locationtech.jts.geom.Coordinate
 import java.io.Serializable
 
 
-data class Vertex(
+data class FlyMapVertex(
     val buildingId: Long,
     val position: Vector3f,
-    val edges: MutableList<Edge> = mutableListOf(),
+    val edges: MutableList<FlyMapEdgeEdge> = mutableListOf(),
     var isChargeStation: Boolean = false,
 //    var isBaseStation: Boolean = false,
 //    var isDestination: Boolean = false,
@@ -24,7 +24,7 @@ data class Vertex(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Vertex
+        other as FlyMapVertex
 
         return position == other.position
     }

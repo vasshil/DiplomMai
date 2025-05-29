@@ -7,12 +7,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowPosition
-import androidx.compose.ui.window.WindowState
-import androidx.compose.ui.window.application
+import androidx.compose.ui.window.*
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
@@ -25,6 +23,7 @@ import ui.compose.city_creator.widgets.side_panel.landscape.LandscapeList
 import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
 import ui.compose.city_creator.CreatorViewModel
 import ui.compose.city_creator.Scheme2DMode
+import ui.compose.city_creator.widgets.InfoDialog
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.DeliveryPanel
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoints
 import ui.compose.city_creator.widgets.topbar.SimulationMode
@@ -61,7 +60,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
     // точки отправки и назначения для нового груза
     var cargoPoints by remember { mutableStateOf<CargoPoints>(CargoPoints.Idle) }
 
-
+    var showWrongFileDialog by remember { mutableStateOf(false) }
 
     MaterialTheme {
 
@@ -86,6 +85,8 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                         file?.let {
                             FlyMap.loadFromFile(it.path)?.let { loadedCity ->
                                 viewModel.setCity(loadedCity)
+                            } ?: kotlin.run {
+                                showWrongFileDialog = true
                             }
                         }
 
@@ -112,6 +113,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                 SchemeView(
                     modifier = Modifier.width(width = 600.dp).weight(1f).fillMaxHeight(),
                     flyMap = flyMap,
+                    viewModel = viewModel,
                     cityCreatorMode = editorMode,
                     isEditorMode = schemeMode == Scheme2DMode.EDITOR,
                     drawBaseGraph = true,
@@ -192,7 +194,6 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
                 Divider(color = DIVIDER_COLOR, modifier = Modifier.width(1.dp).fillMaxHeight())
 
-
                 when (schemeMode) {
                     Scheme2DMode.EDITOR -> {
                         LandscapeList(
@@ -242,14 +243,18 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
                 }
 
+
+                if (showWrongFileDialog) {
+                    InfoDialog("Некорректный файл сохранения") {
+                        showWrongFileDialog = false // закрываем
+                    }
+                }
+
+
             }
 
         }
 
-//        if (showOpenFile) OpenTxtDialog(window) { file ->
-//            showOpenFile = false
-//            file?.readText()?.let { /* обработка */ }
-//        }
 
     }
 

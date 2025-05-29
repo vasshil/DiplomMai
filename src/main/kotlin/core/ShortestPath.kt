@@ -2,21 +2,21 @@ package core
 
 import com.jme3.math.Vector3f
 import model.graph.Graph3D
-import model.graph.Vertex
+import model.graph.FlyMapVertex
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-fun findShortestPathDijkstra(start: Vertex, end: Vertex): List<Vertex> {
+fun findShortestPathDijkstra(start: FlyMapVertex, end: FlyMapVertex): List<FlyMapVertex> {
     // Если стартовая и конечная вершины совпадают, возвращаем их как путь
     if (start == end) return listOf(start)
 
     // PriorityQueue для вершин с расстояниями (по умолчанию отсортирована по минимальному расстоянию)
-    val queue = PriorityQueue<Pair<Vertex, Float>>(compareBy { it.second })
+    val queue = PriorityQueue<Pair<FlyMapVertex, Float>>(compareBy { it.second })
     // Карта для отслеживания кратчайшего пути к каждой вершине
-    val distances = mutableMapOf<Vertex, Float>().withDefault { Float.POSITIVE_INFINITY }
+    val distances = mutableMapOf<FlyMapVertex, Float>().withDefault { Float.POSITIVE_INFINITY }
     // Карта для отслеживания предыдущих вершин в пути
-    val previousVertices = mutableMapOf<Vertex, Vertex?>()
+    val previousVertices = mutableMapOf<FlyMapVertex, FlyMapVertex?>()
 
     // Инициализируем расстояние до стартовой вершины как 0
     distances[start] = 0f
@@ -32,8 +32,8 @@ fun findShortestPathDijkstra(start: Vertex, end: Vertex): List<Vertex> {
 
         // Если достигли конечной вершины, то восстанавливаем путь
         if (currentVertex == end) {
-            val path = mutableListOf<Vertex>()
-            var vertex: Vertex? = end
+            val path = mutableListOf<FlyMapVertex>()
+            var vertex: FlyMapVertex? = end
             while (vertex != null) {
                 path.add(vertex)
                 vertex = previousVertices[vertex]
@@ -59,24 +59,24 @@ fun findShortestPathDijkstra(start: Vertex, end: Vertex): List<Vertex> {
     return emptyList()
 }
 
-fun findShortestPathAStar(graph: Graph3D, start: Vertex, goal: Vertex): List<Vertex> {
-    data class Node(val vertex: Vertex, val cost: Float, val estimate: Float) : Comparable<Node> {
+fun findShortestPathAStar(graph: Graph3D, start: FlyMapVertex, goal: FlyMapVertex): List<FlyMapVertex> {
+    data class Node(val vertex: FlyMapVertex, val cost: Float, val estimate: Float) : Comparable<Node> {
         override fun compareTo(other: Node): Int {
             return (cost + estimate).compareTo(other.cost + other.estimate)
         }
     }
 
     // Функция для расчета Евклидова расстояния
-    fun heuristic(v1: Vertex, v2: Vertex): Float {
+    fun heuristic(v1: FlyMapVertex, v2: FlyMapVertex): Float {
         return sqrt((v1.position.x - v2.position.x).pow(2) +
                 (v1.position.y - v2.position.y).pow(2) +
                 (v1.position.z - v2.position.z).pow(2))
     }
 
     val openSet = PriorityQueue<Node>()
-    val cameFrom = mutableMapOf<Vertex, Vertex?>()
-    val gScore = mutableMapOf<Vertex, Float>().withDefault { Float.POSITIVE_INFINITY }
-    val fScore = mutableMapOf<Vertex, Float>().withDefault { Float.POSITIVE_INFINITY }
+    val cameFrom = mutableMapOf<FlyMapVertex, FlyMapVertex?>()
+    val gScore = mutableMapOf<FlyMapVertex, Float>().withDefault { Float.POSITIVE_INFINITY }
+    val fScore = mutableMapOf<FlyMapVertex, Float>().withDefault { Float.POSITIVE_INFINITY }
 
     gScore[start] = 0f
     fScore[start] = heuristic(start, goal)
@@ -88,8 +88,8 @@ fun findShortestPathAStar(graph: Graph3D, start: Vertex, goal: Vertex): List<Ver
 
         if (current == goal) {
             // Восстановление пути
-            val path = mutableListOf<Vertex>()
-            var temp: Vertex? = current
+            val path = mutableListOf<FlyMapVertex>()
+            var temp: FlyMapVertex? = current
             while (temp != null) {
                 path.add(temp)
                 temp = cameFrom[temp]
@@ -140,21 +140,22 @@ fun findShortestPathAStar(graph: Graph3D, start: Vertex, goal: Vertex): List<Ver
 //    return distances
 
 // Функция для вычисления Евклидова расстояния между двумя вершинами
-fun distanceBetween(vertex1: Vertex, vertex2: Vertex): Float {
+fun distanceBetween(vertex1: FlyMapVertex, vertex2: FlyMapVertex): Float {
     val dx = vertex1.position.x - vertex2.position.x
     val dy = vertex1.position.y - vertex2.position.y
     val dz = vertex1.position.z - vertex2.position.z
     return sqrt(dx * dx + dy * dy + dz * dz)
 }
 
-fun distanceBetween(pos1: Vector3f, pos2: Vector3f): Float {
+fun distanceBetween(pos1: Vector3f?, pos2: Vector3f?): Float {
+    if (pos1 == null || pos2 == null) return Float.POSITIVE_INFINITY
     val dx = pos1.x - pos2.x
     val dy = pos1.y - pos2.y
     val dz = pos1.z - pos2.z
     return sqrt(dx * dx + dy * dy + dz * dz)
 }
 
-fun pathLength(path: List<Vertex>): Float {
+fun pathLength(path: List<FlyMapVertex>): Float {
     var length = 0f
     for (i in 0 until path.size - 1) {
         length += distanceBetween(path[i], path[i + 1])

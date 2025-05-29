@@ -19,9 +19,9 @@ import com.jme3.shadow.DirectionalLightShadowFilter
 import com.jme3.shadow.DirectionalLightShadowRenderer
 import com.jme3.system.AppSettings
 import model.FlyMap
-import model.graph.Edge
+import model.graph.FlyMapEdgeEdge
 import model.graph.Graph3D
-import model.graph.Vertex
+import model.graph.FlyMapVertex
 import model.landscape.Building
 import ui.compose.common.FOCUSED_BUILDING_COLOR
 import ui.compose.common.toColorRGBA
@@ -138,7 +138,7 @@ class City1 : SimpleApplication() {
         }
     }
 
-    private fun displayVertex(vertex: Vertex, index: Int) {
+    private fun displayVertex(vertex: FlyMapVertex, index: Int) {
         val sphere = Sphere(16, 16, 0.3f) // Радиус сферы 0.3
         val vertexGeom = Geometry("Vertex_$index", sphere)
         val mat = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
@@ -150,7 +150,7 @@ class City1 : SimpleApplication() {
         rootNode.attachChild(vertexGeom)
     }
 
-    private fun displayEdge(edge: Edge) {
+    private fun displayEdge(edge: FlyMapEdgeEdge) {
         val line = Line(edge.vertex1.position, edge.vertex2.position)
         val edgeGeom = Geometry("Edge", line)
         val mat = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")

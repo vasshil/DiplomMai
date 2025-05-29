@@ -1,5 +1,8 @@
 package ui.compose.city_creator
 
+import androidx.compose.ui.window.Notification
+import androidx.compose.ui.window.TrayState
+import androidx.compose.ui.window.rememberNotification
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +14,7 @@ import model.drone.Drone
 import model.landscape.Building
 import model.landscape.NoFlyZone
 
-class CreatorViewModel {
+class CreatorViewModel() {
 
     private val scope = CoroutineScope(Dispatchers.IO)
 

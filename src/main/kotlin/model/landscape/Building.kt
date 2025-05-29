@@ -2,13 +2,11 @@ package model.landscape
 
 import com.jme3.math.Vector3f
 import com.jme3.scene.Mesh
-import com.jme3.scene.Mesh.Mode
 import com.jme3.scene.VertexBuffer
 import com.jme3.util.BufferUtils
-import core.toVector3f
-import model.graph.Vertex
+import core.distanceBetween
+import model.graph.FlyMapVertex
 import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryCollection
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.operation.buffer.BufferOp
@@ -29,7 +27,7 @@ data class Building(
         const val safeDistance = 1f
     }
 
-//    val safeDistanceCoords: MutableList<Vector3f> = mutableListOf()
+    var safeDistanceCoords: List<FlyMapVertex> = mutableListOf()
 
 //    constructor(id: Long, groundCoords: MutableList<Vertex>, height: Float) : this(id, groundCoords.map { it.position }.toMutableList(), height)
 
@@ -42,7 +40,7 @@ data class Building(
             if (groundCoords.first() != groundCoords.last()) {
                 groundCoords.add(groundCoords.first())
             }
-
+            safeDistanceCoords = getKeyNodes()
         }
     }
 
@@ -135,8 +133,8 @@ data class Building(
     }
 
     // Получаем список вершин с отступом от здания
-    fun getKeyNodes(reqHeight: Float = 0f): List<Vertex> {
-        var expandedVertices: List<Vertex> = emptyList()
+    fun getKeyNodes(reqHeight: Float = 0f): List<FlyMapVertex> {
+        var expandedVertices: List<FlyMapVertex> = emptyList()
 
         if (reqHeight > height + safeDistance) return expandedVertices
 
@@ -146,13 +144,24 @@ data class Building(
                 safeDistance.toDouble(),
                 BufferParameters(0, CAP_FLAT, JOIN_MITRE, 1000.0))
                 .coordinates.map {
-                    Vertex(id, it.x.toFloat(), 0f, it.y.toFloat())
+                    FlyMapVertex(id, it.x.toFloat(), 0f, it.y.toFloat())
                 }
 
 
         return expandedVertices
 
     }
+
+    /**
+     * Возвращает ближайшую вершину из списка [safeDistanceCoords]
+     * к указанным координатам [target]. Если все вершины дальше, чем
+     * `safeDistance`, вернёт null.
+     */
+    fun findNearestSafeVertex(target: Vector3f): FlyMapVertex? =
+        safeDistanceCoords
+            .minByOrNull {
+                distanceBetween(it.position, target)
+            }
 
     override fun hashCode(): Int {
         return "$id$height${groundCoords.hashCode()}".hashCode()

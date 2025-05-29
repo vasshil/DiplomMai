@@ -10,5 +10,6 @@ data class Cargo(
     val weight: Double, // kg
     val startVertex: Vector3f,
     val destination: Vector3f,
-    val status: CargoStatus = CargoStatus.WAITING
+    var status: CargoStatus = CargoStatus.WAITING,
+    val droneId: Long = -1,
 ): Serializable

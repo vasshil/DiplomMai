@@ -2,9 +2,8 @@ package core
 
 import com.jme3.math.Vector3f
 import core.algo.Vertex3D
-import model.graph.Vertex
+import model.graph.FlyMapVertex
 import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.math.Vector3D
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -22,6 +21,6 @@ fun Vector3f.toJTSCoordinate(): Coordinate = Coordinate(x.toDouble(), z.toDouble
 
 
 /** Быстро превращаем старую Vertex (XY) в 3-D-вершину конкретного уровня */
-fun Vertex.to3D(y: Float, buildingId: Long): Vertex3D =
+fun FlyMapVertex.to3D(y: Float, buildingId: Long): Vertex3D =
     Vertex3D(buildingId, position.x, y, position.z)
 

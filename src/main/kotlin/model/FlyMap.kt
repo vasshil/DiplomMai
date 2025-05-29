@@ -1,17 +1,18 @@
 package model
 
 import androidx.compose.ui.geometry.Offset
+import com.jme3.math.Vector3f
+import core.distanceBetween
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.write
-import io.github.vinceglb.filekit.writeString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import model.cargo.Cargo
 import model.drone.Drone
-import model.graph.Edge
+import model.graph.FlyMapEdgeEdge
 import model.graph.Graph3D
-import model.graph.Vertex
+import model.graph.FlyMapVertex
 import model.landscape.Building
 import model.landscape.NoFlyZone
 import org.locationtech.jts.geom.*
@@ -21,7 +22,7 @@ import kotlin.math.hypot
 data class FlyMap(
     val buildings: MutableList<Building> = mutableListOf(),
     val noFlyZones: MutableList<NoFlyZone> = mutableListOf(),
-    var graph: Graph3D = Graph3D(),
+//    var graph: Graph3D = Graph3D(),
     var drones: MutableList<Drone> = mutableListOf(),
     var cargos: MutableList<Cargo> = mutableListOf(),
 ): Serializable {
@@ -52,11 +53,15 @@ data class FlyMap(
         noFlyZones.removeIf { it.id == id }
     }
 
-    fun getNearestVertex(mouse: Offset): Vertex? {
-        for (vertex in graph.vertices.reversed()) {
-            if (hypot(vertex.position.x - mouse.x, vertex.position.z - mouse.y) <= 3) return vertex
+    fun getNearestVertex(mouse: Offset): FlyMapVertex? {
+        val mouseVector = Vector3f(mouse.x, 0f, mouse.y)
+        val nearestVertex = buildings.mapNotNull {
+            it.findNearestSafeVertex(mouseVector)
+        }.minByOrNull {
+            distanceBetween(it.position, mouseVector)
         }
-        return null
+
+        return nearestVertex
     }
 
 
@@ -76,9 +81,9 @@ data class FlyMap(
             }
 
             for (i in 0 until keyNodes.size - 1) {
-                graph.add(Edge(keyNodes[i], keyNodes[i + 1], true))
+                graph.add(FlyMapEdgeEdge(keyNodes[i], keyNodes[i + 1]))
             }
-            graph.add(Edge(keyNodes.first(), keyNodes.last(), true))
+            graph.add(FlyMapEdgeEdge(keyNodes.first(), keyNodes.last()))
 
         }
 
@@ -91,14 +96,13 @@ data class FlyMap(
                     val edge = GeometryFactory().createLineString(arrayOf(vertex1.toJTSCoordinate(), vertex2.toJTSCoordinate()))
 
                     if (!checkEdgeBuildingsIntersection(edge, buildingsGeometry)) {
-                        graph.add(Edge(vertex1, vertex2, false))
+                        graph.add(FlyMapEdgeEdge(vertex1, vertex2))
                     }
 
                 }
             }
         }
 
-        this.graph = graph
 
         return graph
     }
@@ -168,7 +172,10 @@ data class FlyMap(
                 try {
                     file.inputStream().use {
                         (ObjectInputStream(it).readObject() as FlyMap).apply {
-                            graph = createGraphAtHeight()
+                            buildings.forEach {
+                                it.safeDistanceCoords = it.getKeyNodes()
+                            }
+//                            graph = createGraphAtHeight()
 //                            println(graph.toString())
                         }
                     }
