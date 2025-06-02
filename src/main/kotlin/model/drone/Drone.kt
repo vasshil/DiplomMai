@@ -17,7 +17,7 @@ data class Drone(
     val cargos: MutableList<Cargo> = mutableListOf(),
     var currentDestination: Vector3f? = null,
     var currentWayPoint: MutableList<Vector3f> = mutableListOf(),
-    var currentPosition: Vector3f = Vector3f.NAN,
+    var currentPosition: Vector3f = Vector3f.ZERO,
 ): Serializable {
 
     fun getBatteryIcon() = if (status != DroneStatus.CHARGING) {

@@ -20,37 +20,18 @@ import java.io.*
 import kotlin.math.hypot
 
 data class FlyMap(
-    val buildings: MutableList<Building> = mutableListOf(),
-    val noFlyZones: MutableList<NoFlyZone> = mutableListOf(),
-//    var graph: Graph3D = Graph3D(),
-    var drones: MutableList<Drone> = mutableListOf(),
-    var cargos: MutableList<Cargo> = mutableListOf(),
+    val buildings: List<Building> = listOf(),
+    val noFlyZones: List<NoFlyZone> = listOf(),
+    val drones: List<Drone> = listOf(),
+    val cargos: List<Cargo> = listOf(),
 ): Serializable {
 
     fun nextDroneId(): Long {
-        return (drones.maxOfOrNull { it.id } ?: -1) + 1
+        return (buildings.maxOfOrNull { it.id } ?: -1) + 1
     }
 
-    fun newBuilding(): Building {
-        val newId = (buildings.maxOfOrNull { it.id } ?: -1) + 1
-        val newBuilding = Building(newId)
-        buildings.add(newBuilding)
-        return buildings.last()
-    }
-
-    fun removeBuilding(id: Long) {
-        buildings.removeIf { it.id == id }
-    }
-
-    fun newNFZ(): NoFlyZone {
-        val newId = (noFlyZones.maxOfOrNull { it.id } ?: -1) + 1
-        val newNFZ = NoFlyZone(newId, true)
-        noFlyZones.add(newNFZ)
-        return noFlyZones.last()
-    }
-
-    fun removeNFZ(id: Long) {
-        noFlyZones.removeIf { it.id == id }
+    fun nextNFZId(): Long {
+        return (noFlyZones.maxOfOrNull { it.id } ?: -1) + 1
     }
 
     fun getNearestVertex(mouse: Offset): FlyMapVertex? {
@@ -64,48 +45,51 @@ data class FlyMap(
         return nearestVertex
     }
 
+    fun lastBuilding() = buildings.lastOrNull()
 
-    fun createGraphAtHeight(height: Float = 0f): Graph3D {
-        val graph = Graph3D()
+    fun lastNFZ() = noFlyZones.lastOrNull()
 
-        val buildingsGeometry = mutableListOf<Polygon>()
-
-        for (building in buildings) {
-            val keyNodes = building.getKeyNodes(height)
-            if (keyNodes.isEmpty()) continue
-
-            buildingsGeometry.add(Building(0, keyNodes.map { it.position }.toMutableList(), 0f).toJTSPolygon())
-
-            keyNodes.forEach {
-                graph.add(building.id, it)
-            }
-
-            for (i in 0 until keyNodes.size - 1) {
-                graph.add(FlyMapEdgeEdge(keyNodes[i], keyNodes[i + 1]))
-            }
-            graph.add(FlyMapEdgeEdge(keyNodes.first(), keyNodes.last()))
-
-        }
-
-        for (vertex1i in graph.vertices.indices) {
-            for (vertex2i in vertex1i until graph.vertices.size) {
-                val vertex1 = graph.vertices[vertex1i]
-                val vertex2 = graph.vertices[vertex2i]
-                if (vertex1.buildingId != vertex2.buildingId) {
-
-                    val edge = GeometryFactory().createLineString(arrayOf(vertex1.toJTSCoordinate(), vertex2.toJTSCoordinate()))
-
-                    if (!checkEdgeBuildingsIntersection(edge, buildingsGeometry)) {
-                        graph.add(FlyMapEdgeEdge(vertex1, vertex2))
-                    }
-
-                }
-            }
-        }
-
-
-        return graph
-    }
+//    fun createGraphAtHeight(height: Float = 0f): Graph3D {
+//        val graph = Graph3D()
+//
+//        val buildingsGeometry = mutableListOf<Polygon>()
+//
+//        for (building in buildings) {
+//            val keyNodes = building.getKeyNodes(height)
+//            if (keyNodes.isEmpty()) continue
+//
+//            buildingsGeometry.add(Building(0, keyNodes.map { it.position }.toMutableList(), 0f).toJTSPolygon())
+//
+//            keyNodes.forEach {
+//                graph.add(building.id, it)
+//            }
+//
+//            for (i in 0 until keyNodes.size - 1) {
+//                graph.add(FlyMapEdgeEdge(keyNodes[i], keyNodes[i + 1]))
+//            }
+//            graph.add(FlyMapEdgeEdge(keyNodes.first(), keyNodes.last()))
+//
+//        }
+//
+//        for (vertex1i in graph.vertices.indices) {
+//            for (vertex2i in vertex1i until graph.vertices.size) {
+//                val vertex1 = graph.vertices[vertex1i]
+//                val vertex2 = graph.vertices[vertex2i]
+//                if (vertex1.buildingId != vertex2.buildingId) {
+//
+//                    val edge = GeometryFactory().createLineString(arrayOf(vertex1.toJTSCoordinate(), vertex2.toJTSCoordinate()))
+//
+//                    if (!checkEdgeBuildingsIntersection(edge, buildingsGeometry)) {
+//                        graph.add(FlyMapEdgeEdge(vertex1, vertex2))
+//                    }
+//
+//                }
+//            }
+//        }
+//
+//
+//        return graph
+//    }
 
     private fun checkEdgeBuildingsIntersection(edge: LineString, buildings: List<Polygon>): Boolean {
         for (building in buildings) {

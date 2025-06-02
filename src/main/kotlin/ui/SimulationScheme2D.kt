@@ -39,7 +39,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
     val flyMap by viewModel.flyMapFlow.collectAsState()
 
-    println("collected fly map ${flyMap.noFlyZones.toTypedArray().contentToString()}")
+    println("collected fly map ${flyMap.buildings.toTypedArray().contentToString()}")
 
     var schemeMode by remember { mutableStateOf(Scheme2DMode.VIEW) }
 
@@ -47,9 +47,9 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
     var editorMode by remember { mutableStateOf(CreatorModeEnum.NONE) }
 
-    var newBuilding: Building? by remember { mutableStateOf(null) }
+    var newBuildingId: Long? by remember { mutableStateOf(null) }
 
-    var newNFZ: NoFlyZone? by remember { mutableStateOf(null) }
+    var newNFZId: Long? by remember { mutableStateOf(null) }
 
     var focusedBuildingId by remember { mutableLongStateOf(-1) }
 
@@ -92,11 +92,22 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
                     }
                 },
-                onSimulationModeChange = {
-                    mode -> simulationMode = mode
+                onSimulationModeChange = { mode ->
+                    simulationMode = mode
+                    if (mode == SimulationMode.PLAY) {
+                        viewModel.droneRoutingManager.start()
+                    } else {
+                        viewModel.droneRoutingManager.stop()
+                    }
                 },
                 onEditorModeChange = { mode ->
                     editorMode = mode
+                    if (mode != CreatorModeEnum.ADD_BUILDING) {
+                        if (newBuildingId != null) {
+                            newBuildingId = null
+                            viewModel.removeLastBuilding()
+                        }
+                    }
                 },
                 schemeMode = schemeMode,
                 onSchemeModeChange = { mode ->
@@ -124,18 +135,24 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                         if (schemeMode == Scheme2DMode.EDITOR) {
                             when (editorMode) {
                                 CreatorModeEnum.ADD_BUILDING -> {
-                                    if (newBuilding == null) {
-                                        newBuilding = flyMap.newBuilding()
+                                    if (newBuildingId == null) {
+                                        newBuildingId = viewModel.newBuilding()
                                     }
-                                    if (newBuilding?.groundCoords?.isNotEmpty() == true &&
-                                        newBuilding?.groundCoords?.first()?.x == mousePosition.x &&
-                                        newBuilding?.groundCoords?.first()?.z == mousePosition.y) {
+                                    newBuildingId?.let {
+                                        viewModel.addBuildingGroundPoint(it, mousePosition.x, mousePosition.y)
+                                    }
+                                    if (flyMap.lastBuilding()?.groundCoords?.isNotEmpty() == true &&
+                                        flyMap.lastBuilding()?.groundCoords?.first()?.x == mousePosition.x &&
+                                        flyMap.lastBuilding()?.groundCoords?.first()?.z == mousePosition.y) {
 
-                                        newBuilding?.finish()
-                                        newBuilding = null
-                                        flyMap.createGraphAtHeight()
+                                        newBuildingId?.let {
+                                            viewModel.finishBuilding(it)
+                                        }
+
+                                        newBuildingId = null
+//                                        flyMap.createGraphAtHeight()
                                     }
-                                    newBuilding?.addGroundPoint(mousePosition.x, mousePosition.y)
+
                                 }
                                 CreatorModeEnum.ADD_CHARGE_STATION -> {
                                     val nearestVertex = flyMap.getNearestVertex(mousePosition)
@@ -144,27 +161,31 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                                     }
                                 }
                                 CreatorModeEnum.ADD_NO_FLY_ZONE -> {
-                                    if (newNFZ == null) {
-                                        newNFZ = flyMap.newNFZ()
+                                    if (newNFZId == null) {
+                                        newNFZId = viewModel.newNFZ()
                                     }
-                                    if (newNFZ?.groundCoords?.isNotEmpty() == true &&
-                                        newNFZ?.groundCoords?.first()?.x == mousePosition.x &&
-                                        newNFZ?.groundCoords?.first()?.z == mousePosition.y) {
+                                    newNFZId?.let {
+                                        viewModel.addNFZGroundPoint(it, mousePosition.x, mousePosition.y)
+                                    }
+                                    if (flyMap.lastNFZ()?.groundCoords?.isNotEmpty() == true &&
+                                        flyMap.lastNFZ()?.groundCoords?.first()?.x == mousePosition.x &&
+                                        flyMap.lastNFZ()?.groundCoords?.first()?.z == mousePosition.y) {
 
-                                        newNFZ?.finish()
-                                        newNFZ = null
+                                        newNFZId?.let {
+                                            viewModel.finishNFZ(it)
+                                        }
+                                        newNFZId = null
 //                                        flyMap.createGraphAtHeight()
                                     }
-                                    newNFZ?.addGroundPoint(mousePosition.x, mousePosition.y)
                                 }
                                 CreatorModeEnum.REMOVE -> {
                                     if (focusedBuildingId != -1L) {
-                                        flyMap.removeBuilding(focusedBuildingId)
-                                        flyMap.createGraphAtHeight()
+                                        viewModel.removeBuilding(focusedBuildingId)
+//                                        flyMap.createGraphAtHeight()
                                     }
                                     if (focusedNFZId != -1L) {
-                                        flyMap.removeNFZ(focusedNFZId)
-                                        flyMap.createGraphAtHeight()
+                                        viewModel.removeNFZ(focusedNFZId)
+//                                        flyMap.createGraphAtHeight()
                                     }
 
                                 }
@@ -209,17 +230,21 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                                 viewModel.updateBuilding(changedBuilding)
                             },
                             onBuildingFinished = {
-                                newBuilding?.finish()
-                                newBuilding = null
-                                flyMap.createGraphAtHeight()
+                                newBuildingId?.let {
+                                    viewModel.finishBuilding(it)
+                                }
+                                newBuildingId = null
+//                                flyMap.createGraphAtHeight()
                             },
                             onNFZChanged = { changedNFZ ->
                                 viewModel.updateNoFlyZone(changedNFZ)
-                                flyMap.createGraphAtHeight()
+//                                flyMap.createGraphAtHeight()
                             },
                             onNFZFinished = {
-                                newNFZ?.finish()
-                                newNFZ = null
+                                newNFZId?.let {
+                                    viewModel.finishNFZ(it)
+                                }
+                                newNFZId = null
                             }
                         )
                     }

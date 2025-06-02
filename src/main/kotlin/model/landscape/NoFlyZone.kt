@@ -8,25 +8,12 @@ import java.io.Serializable
 
 data class NoFlyZone(
     val id: Long,
-    var isActive: Boolean,
-    val groundCoords: MutableList<Vector3f> = mutableListOf(),
+    val isActive: Boolean = true,
+    val groundCoords: List<Vector3f> = listOf(),
 ): Serializable {
 
     companion object {
         const val safeDistance = 1f
-    }
-
-    fun addGroundPoint(x: Float, z: Float) {
-        groundCoords.add(Vector3f(x, 0f, z))
-    }
-
-    fun finish() {
-        if (groundCoords.isNotEmpty()) {
-            if (groundCoords.first() != groundCoords.last()) {
-                groundCoords.add(groundCoords.first())
-            }
-
-        }
     }
 
     fun toJTSPolygon(coords: List<Vector3f> = groundCoords): Polygon {
@@ -138,7 +125,7 @@ data class NoFlyZone(
 //    }
 
     override fun hashCode(): Int {
-        return "$id${groundCoords.hashCode()}".hashCode()
+        return "$id$isActive${groundCoords.hashCode()}".hashCode()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -148,6 +135,7 @@ data class NoFlyZone(
         other as NoFlyZone
 
         if (id != other.id) return false
+        if (isActive != other.isActive) return false
         if (groundCoords != other.groundCoords) return false
 
         return true

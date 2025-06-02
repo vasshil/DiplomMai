@@ -243,93 +243,37 @@ fun SchemeView(
                 )
 
                 // безопасные вершины у здания
-                building.safeDistanceCoords.forEach { vertex ->
+
+                for (i in 0 until building.safeDistanceCoords.size) {
+                    val from = building.safeDistanceCoords[i]
+                    val to = if (i < building.safeDistanceCoords.size - 1) building.safeDistanceCoords[i + 1]
+                    else building.safeDistanceCoords.first()
+                    val startX = from.position.x * scale + offset.x
+                    val startY = from.position.z * scale + offset.y
+                    val endX = to.position.x * scale + offset.x
+                    val endY = to.position.z * scale + offset.y
+
+                    drawLine(
+                        color = EDGE_COLOR,
+                        start = Offset(startX, startY),
+                        end = Offset(endX, endY),
+                        strokeWidth = 2f
+                    )
+
+                }
+
+                building.safeDistanceCoords.forEachIndexed { i, vertex ->
+                    if (i == building.safeDistanceCoords.lastIndex) return@forEachIndexed
+
                     val x = vertex.position.x * scale + offset.x
                     val y = vertex.position.z * scale + offset.y
 
-                    val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 13f else 9f
+                    val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 12f else 8f
 
                     val color = if (vertex.isChargeStation) CHARGE_STATION_COLOR else KEY_POINT_COLOR
                     drawCircle(
                         color = color,
                         radius = r,
-                        center = Offset(x, y)
-                    )
-                }
-
-            }
-
-            // Рисуем ребра графа
-//            flyMap.graph.edges.forEach { edge ->
-////            if (!(edge.isBase && !drawBaseGraph)) return@forEach
-//                val startX = edge.vertex1.position.x * scale + offset.x
-//                val startY = edge.vertex1.position.z * scale + offset.y
-//                val endX = edge.vertex2.position.x * scale + offset.x
-//                val endY = edge.vertex2.position.z * scale + offset.y
-//
-//                drawLine(
-//                    color = EDGE_COLOR,
-//                    start = Offset(startX, startY),
-//                    end = Offset(endX, endY),
-//                    strokeWidth = 2f
-//                )
-//            }
-//
-//            // Рисуем вершины графа
-//            flyMap.graph.vertices.forEach { vertex ->
-//                if (!drawBaseGraph && !drawFullGraph) return@forEach
-//
-//                val x = vertex.position.x * scale + offset.x
-//                val y = vertex.position.z * scale + offset.y
-//
-//                val r = if (hypot(x - mouseCoordinate.x, y - mouseCoordinate.y) <= 11) 13f else 9f
-//
-//                val color = if (vertex.isChargeStation) CHARGE_STATION_COLOR else KEY_POINT_COLOR
-//                drawCircle(
-//                    color = color,
-//                    radius = r,
-//                    center = Offset(x, y)
-//                )
-//            }
-
-            if (!isEditorMode)  {
-
-                // Рисуем кратчайший путь, если он есть
-                if (shortestPath.isNotEmpty()) {
-                    println(shortestPath)
-                    shortestPath.zipWithNext { v1, v2 ->
-                        val startX = v1.position.x * scale + offset.x
-                        val startY = v1.position.z * scale + offset.y
-                        val endX = v2.position.x * scale + offset.x
-                        val endY = v2.position.z * scale + offset.y
-
-                        drawLine(
-                            color = SHORTEST_PATH_COLOR,
-                            start = Offset(startX, startY),
-                            end = Offset(endX, endY),
-                            strokeWidth = 4f
-                        )
-                    }
-                }
-
-                selectedVertex1?.let {
-                    val x = it.position.x * scale + offset.x
-                    val y = it.position.z * scale + offset.y
-
-                    drawCircle(
-                        color = CHARGE_STATION_COLOR,
-                        radius = 9f,
-                        center = Offset(x, y)
-                    )
-                }
-
-                selectedVertex2?.let {
-                    val x = it.position.x * scale + offset.x
-                    val y = it.position.z * scale + offset.y
-
-                    drawCircle(
-                        color = NO_FLY_ZONE_COLOR,
-                        radius = 9f,
                         center = Offset(x, y)
                     )
                 }
@@ -342,43 +286,46 @@ fun SchemeView(
 
                 if (nfz.isActive) {
 
-                    val path = Path().apply {
-                        this.moveTo(nfz.groundCoords.first().x * scale + offset.x, nfz.groundCoords.first().z * scale + offset.y)
-                        nfz.groundCoords.forEach { coordinate ->
-                            lineTo(
-                                coordinate.x * scale + offset.x,
-                                coordinate.z * scale + offset.y
-                            )
+                    if (nfz.groundCoords.isNotEmpty()) {
+                        val path = Path().apply {
+                            this.moveTo(nfz.groundCoords.first().x * scale + offset.x, nfz.groundCoords.first().z * scale + offset.y)
+                            nfz.groundCoords.forEach { coordinate ->
+                                lineTo(
+                                    coordinate.x * scale + offset.x,
+                                    coordinate.z * scale + offset.y
+                                )
+                            }
                         }
-                    }
 
-                    drawPath(
-                        path = path,
-                        color = if (focusedNFZId == nfz.id && cityCreatorMode == CreatorModeEnum.REMOVE) {
-                            NO_FLY_ZONE_FOCUSED_DELETE_FILL_COLOR
-                        } else NO_FLY_ZONE_FILL_COLOR,
-                        style = Fill
-                    )
-                    drawPath(
-                        path = path,
-                        color = if (focusedNFZId == nfz.id && cityCreatorMode != CreatorModeEnum.REMOVE) {
-                            NO_FLY_ZONE_FOCUSED_BORDER_COLOR
-                        } else NO_FLY_ZONE_BORDER_COLOR,
+                        drawPath(
+                            path = path,
+                            color = if (focusedNFZId == nfz.id && cityCreatorMode == CreatorModeEnum.REMOVE) {
+                                NO_FLY_ZONE_FOCUSED_DELETE_FILL_COLOR
+                            } else NO_FLY_ZONE_FILL_COLOR,
+                            style = Fill
+                        )
+                        drawPath(
+                            path = path,
+                            color = if (focusedNFZId == nfz.id && cityCreatorMode != CreatorModeEnum.REMOVE) {
+                                NO_FLY_ZONE_FOCUSED_BORDER_COLOR
+                            } else NO_FLY_ZONE_BORDER_COLOR,
 //                    if (focusedBuildingId == building.id) {
 //                        when(cityCreatorMode) {
 //                            CreatorModeEnum.REMOVE -> DELETE_FOCUSED_BUILDING_COLOR
 //                            else -> FOCUSED_BUILDING_COLOR
 //                        }
 //                    } else BUILDING_COLOR,
-                        style = Stroke(
-                            width = if (focusedNFZId == nfz.id) 6f else 3f,
-                            cap = StrokeCap.Round,
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(10f, 10f), // 10px линия, 10px пробел
-                                phase = 0f              // сдвиг, можно анимировать
+                            style = Stroke(
+                                width = if (focusedNFZId == nfz.id) 6f else 3f,
+                                cap = StrokeCap.Round,
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(10f, 10f), // 10px линия, 10px пробел
+                                    phase = 0f              // сдвиг, можно анимировать
+                                )
                             )
                         )
-                    )
+                    }
+
 
                 }
 
@@ -387,6 +334,7 @@ fun SchemeView(
             // место курсора
             drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x - 10, mouseCoordinate.y), Offset(mouseCoordinate.x + 10, mouseCoordinate.y), 1f)
             drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x, mouseCoordinate.y - 10), Offset(mouseCoordinate.x, mouseCoordinate.y + 10), 1f)
+
         }
 
         if (showScaleButtons) {

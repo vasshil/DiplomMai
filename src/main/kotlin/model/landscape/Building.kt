@@ -19,30 +19,18 @@ import java.io.Serializable
 
 data class Building(
     val id: Long,
-    val groundCoords: MutableList<Vector3f> = mutableListOf(),
-    val height: Float = 0f
+    val groundCoords: List<Vector3f> = listOf(),
+    val height: Float = 0f,
+    var safeDistanceCoords: List<FlyMapVertex> = listOf()
 ): Serializable {
 
     companion object {
         const val safeDistance = 1f
     }
 
-    var safeDistanceCoords: List<FlyMapVertex> = mutableListOf()
+
 
 //    constructor(id: Long, groundCoords: MutableList<Vertex>, height: Float) : this(id, groundCoords.map { it.position }.toMutableList(), height)
-
-    fun addGroundPoint(x: Float, z: Float) {
-        groundCoords.add(Vector3f(x, 0f, z))
-    }
-
-    fun finish() {
-        if (groundCoords.isNotEmpty()) {
-            if (groundCoords.first() != groundCoords.last()) {
-                groundCoords.add(groundCoords.first())
-            }
-            safeDistanceCoords = getKeyNodes()
-        }
-    }
 
     fun toJTSPolygon(coords: List<Vector3f> = groundCoords): Polygon {
         val coordinates = coords.map {
@@ -164,7 +152,7 @@ data class Building(
             }
 
     override fun hashCode(): Int {
-        return "$id$height${groundCoords.hashCode()}".hashCode()
+        return "$id$height${groundCoords.hashCode()}${safeDistanceCoords.hashCode()}".hashCode()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -176,6 +164,7 @@ data class Building(
         if (id != other.id) return false
         if (groundCoords != other.groundCoords) return false
         if (height != other.height) return false
+        if (safeDistanceCoords != other.safeDistanceCoords) return false
 
         return true
     }

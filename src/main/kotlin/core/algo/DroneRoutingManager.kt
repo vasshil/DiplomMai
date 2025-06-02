@@ -3,6 +3,8 @@ package core.algo
 import com.jme3.math.LineSegment
 import com.jme3.math.Vector3f
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import model.FlyMap
 import model.cargo.CargoStatus
 import model.drone.Drone
@@ -14,7 +16,10 @@ import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.index.strtree.STRtree
 import kotlin.math.max
 
-class DroneRoutingManager(private val flyMap: FlyMap) {
+class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
+
+    private var flyMap = flyMapFlow.value
+
     private var routingJob: Job? = null
     private var isRunning = false
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
@@ -24,6 +29,13 @@ class DroneRoutingManager(private val flyMap: FlyMap) {
 
     init {
         buildObstacleIndex()
+
+        coroutineScope.launch {
+            flyMapFlow.collectLatest {
+                flyMap = it
+//                println("manager  collect")
+            }
+        }
     }
 
     fun start() {
@@ -166,6 +178,7 @@ class DroneRoutingManager(private val flyMap: FlyMap) {
                 drone.batteryLevel = max(0, drone.batteryLevel - 1)
             }
         }
+        println(flyMap.drones.toTypedArray().contentToString())
     }
 
     private fun completeDroneMission(drone: Drone) {
