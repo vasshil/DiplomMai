@@ -70,7 +70,10 @@ fun NoFlyZoneItem(
 
                             Checkbox(
                                 checked = nfz.isActive,
-                                onCheckedChange = { onChanged(nfz.copy(isActive = !nfz.isActive)) },
+                                onCheckedChange = {
+                                    println("nfz check curr ${nfz.isActive} / new ${!nfz.isActive}")
+                                    onChanged(nfz.copy(isActive = !nfz.isActive))
+                                                  },
                                 colors = CheckboxDefaults.colors(
                                     checkmarkColor = Color.White,
                                     checkedColor = Color.Black,

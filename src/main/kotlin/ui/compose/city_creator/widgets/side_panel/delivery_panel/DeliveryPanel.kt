@@ -42,6 +42,36 @@ fun DeliveryPanel(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    LaunchedEffect(key1 = cargoPoints) {
+
+        println("cargoPoints: $cargoPoints")
+
+        if (cargoPoints is CargoPoints.Waiting2) {
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+
+                val result = snackbarHostState
+                    .showSnackbar(
+                        message = "Выберите точку назначения",
+                        actionLabel = "Отмена",
+                        duration = SnackbarDuration.Indefinite
+                    )
+                when (result) {
+                    SnackbarResult.ActionPerformed -> {
+                        onCargoPointsChanged(CargoPoints.Idle)
+                    }
+                    SnackbarResult.Dismissed -> {
+//                    onCargoPointsChanged(CargoPoints.Idle)
+                    }
+                }
+            }
+        } else if (cargoPoints is CargoPoints.TwoPointSelected) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            showDialog = true
+        }
+
+    }
+
     Scaffold(
         modifier = Modifier.width(250.dp).fillMaxHeight(),
         bottomBar = {
@@ -172,30 +202,6 @@ fun DeliveryPanel(
             )
         }
 
-    }
-
-    if (cargoPoints is CargoPoints.Waiting2) {
-        scope.launch {
-            snackbarHostState.currentSnackbarData?.dismiss()
-
-            val result = snackbarHostState
-                .showSnackbar(
-                    message = "Выберите точку назначения",
-                    actionLabel = "Отмена",
-                    duration = SnackbarDuration.Indefinite
-                )
-            when (result) {
-                SnackbarResult.ActionPerformed -> {
-                    onCargoPointsChanged(CargoPoints.Idle)
-                }
-                SnackbarResult.Dismissed -> {
-//                    onCargoPointsChanged(CargoPoints.Idle)
-                }
-            }
-        }
-    } else if (cargoPoints is CargoPoints.TwoPointSelected) {
-        snackbarHostState.currentSnackbarData?.dismiss()
-        showDialog = true
     }
 
 }

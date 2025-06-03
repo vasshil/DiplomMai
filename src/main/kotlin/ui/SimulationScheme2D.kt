@@ -108,6 +108,12 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                             viewModel.removeLastBuilding()
                         }
                     }
+                    if (mode != CreatorModeEnum.ADD_NO_FLY_ZONE) {
+                        if (newNFZId != null) {
+                            newNFZId = null
+                            viewModel.removeLastNFZ()
+                        }
+                    }
                 },
                 schemeMode = schemeMode,
                 onSchemeModeChange = { mode ->
@@ -198,6 +204,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                     },
                     cargoPoints = cargoPoints,
                     onCargoPointsChanged = { newCargoPoints ->
+                        println("newCargoPoints $newCargoPoints")
                         cargoPoints = newCargoPoints
                     }
                 ) { position, pressed ->

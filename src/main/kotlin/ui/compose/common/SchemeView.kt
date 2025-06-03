@@ -62,6 +62,7 @@ fun SchemeView(
     onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
 ) {
 
+
     var mouseCoordinate by remember { mutableStateOf(Offset.Zero) }
 
     var scale by remember { mutableFloatStateOf(10f) } // Масштаб для перевода координат в пиксели
@@ -75,9 +76,9 @@ fun SchemeView(
     }
 
     // Состояния для хранения двух выбранных вершин
-    var selectedVertex1 by remember { mutableStateOf<FlyMapVertex?>(null) }
-    var selectedVertex2 by remember { mutableStateOf<FlyMapVertex?>(null) }
-    var shortestPath by remember { mutableStateOf<List<FlyMapVertex>>(emptyList()) }
+//    var selectedVertex1 by remember { mutableStateOf<FlyMapVertex?>(null) }
+//    var selectedVertex2 by remember { mutableStateOf<FlyMapVertex?>(null) }
+//    var shortestPath by remember { mutableStateOf<List<FlyMapVertex>>(emptyList()) }
 
     Box(
         modifier = modifier
@@ -87,7 +88,7 @@ fun SchemeView(
             modifier = Modifier.fillMaxSize()
                 .background(color = SCHEME_BACKGROUND_COLOR)
                 .clipToBounds()
-                .pointerInput(flyMap, isEditorMode, focusedBuildingId) {
+                .pointerInput(flyMap, isEditorMode, focusedBuildingId, cargoPoints) {
                     detectTapGestures { tapOffset ->
 
                         onClick()
@@ -107,65 +108,69 @@ fun SchemeView(
                         }.minByOrNull {
                             distanceBetween(it?.position, clickedPosition)
                         }
-                        println("nearest: $clickedPosition / $nearestVertex / ${flyMap}")
+//                        println("nearest: $clickedPosition / $nearestVertex / ${flyMap}")
 
                         nearestVertex?.let { vertex ->
 
+                            println("nearest: $cargoPoints / $nearestVertex / ${cargoPoints is CargoPoints.Waiting1} ")
                             if (cargoPoints is CargoPoints.Waiting1) {
                                 onCargoPointsChanged(CargoPoints.Waiting2(vertex.position))
                             } else if (cargoPoints is CargoPoints.Waiting2) {
+                                println("nearest: $cargoPoints / $nearestVertex / ${cargoPoints is CargoPoints.Waiting2} ")
                                 onCargoPointsChanged(CargoPoints.TwoPointSelected(cargoPoints.start, vertex.position))
-                            } else {
-                                if (selectedVertex1 == null) {
-                                    selectedVertex1 = vertex
-                                }
-                                else if (selectedVertex2 == null && vertex != selectedVertex1) {
-                                    selectedVertex2 = vertex
+                            }
+                            else {
 
-
-
-
-                                    // Находим кратчайший путь между двумя вершинами
-//                                shortestPath = findShortestPathAStar(city.graph, selectedVertex1!!, selectedVertex2!!)
-//                                val len = pathLength(shortestPath)
-//                                println("Длина пути ${len} м, потраченный заряд: ${len / 10}%")
-
-
-
-
-                                    val bId1 = flyMap.buildings.find { it.getKeyNodes().contains(selectedVertex1!!) }
-                                    val bId2 = flyMap.buildings.find { it.getKeyNodes().contains(selectedVertex2!!) }
-
-                                    val start2D   = selectedVertex1
-                                    val goal2D    = selectedVertex2
-                                    val startYHgt    = 0f            // высота старта, м
-                                    val goalYHgt     = 0f            // высота финиша, м
-
-                                    // 1) уровни через каждый метр
-                                    val maxH  = maxOf(
-                                        startYHgt, goalYHgt,
-                                        flyMap.buildings.maxOfOrNull { it.height + Building.safeDistance } ?: 0f
-                                    ).toInt()
-                                    val levels = (0..maxH).map { it.toFloat() }
-
-                                    // 2) ленивый граф + поиск
-                                    val navigator = LazyGraph3D(flyMap, levels)
-                                    val route = fastestPath3D(
-                                        start2D!!.to3D(startYHgt, bId1!!.id),
-                                        goal2D!!.to3D(goalYHgt, bId2!!.id),
-                                        navigator
-                                    )
-
-                                    shortestPath = route.map { FlyMapVertex(it.buildingId, it.x, it.y, it.z) }
-
-
-                                }
-                                else {
-                                    // Сбрасываем выбор, если кликнули еще раз (начать с начала)
-                                    selectedVertex1 = null
-                                    selectedVertex2 = null
-                                    shortestPath = emptyList()
-                                }
+//                                if (selectedVertex1 == null) {
+//                                    selectedVertex1 = vertex
+//                                }
+//                                else if (selectedVertex2 == null && vertex != selectedVertex1) {
+//                                    selectedVertex2 = vertex
+//
+//
+//
+//
+//                                    // Находим кратчайший путь между двумя вершинами
+////                                shortestPath = findShortestPathAStar(city.graph, selectedVertex1!!, selectedVertex2!!)
+////                                val len = pathLength(shortestPath)
+////                                println("Длина пути ${len} м, потраченный заряд: ${len / 10}%")
+//
+//
+//
+//
+//                                    val bId1 = flyMap.buildings.find { it.getKeyNodes().contains(selectedVertex1!!) }
+//                                    val bId2 = flyMap.buildings.find { it.getKeyNodes().contains(selectedVertex2!!) }
+//
+//                                    val start2D   = selectedVertex1
+//                                    val goal2D    = selectedVertex2
+//                                    val startYHgt    = 0f            // высота старта, м
+//                                    val goalYHgt     = 0f            // высота финиша, м
+//
+//                                    // 1) уровни через каждый метр
+//                                    val maxH  = maxOf(
+//                                        startYHgt, goalYHgt,
+//                                        flyMap.buildings.maxOfOrNull { it.height + Building.safeDistance } ?: 0f
+//                                    ).toInt()
+//                                    val levels = (0..maxH).map { it.toFloat() }
+//
+//                                    // 2) ленивый граф + поиск
+//                                    val navigator = LazyGraph3D(flyMap, levels)
+//                                    val route = fastestPath3D(
+//                                        start2D!!.to3D(startYHgt, bId1!!.id),
+//                                        goal2D!!.to3D(goalYHgt, bId2!!.id),
+//                                        navigator
+//                                    )
+//
+//                                    shortestPath = route.map { FlyMapVertex(it.buildingId, it.x, it.y, it.z) }
+//
+//
+//                                }
+//                                else {
+//                                    // Сбрасываем выбор, если кликнули еще раз (начать с начала)
+//                                    selectedVertex1 = null
+//                                    selectedVertex2 = null
+//                                    shortestPath = emptyList()
+//                                }
                             }
 
 

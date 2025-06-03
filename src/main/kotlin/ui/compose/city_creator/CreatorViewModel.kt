@@ -115,6 +115,14 @@ class CreatorViewModel() {
         }
     }
 
+    fun removeLastNFZ() {
+        flyMapFlow.update {
+            it.copy(noFlyZones = it.noFlyZones.toMutableList().apply {
+                removeLast()
+            })
+        }
+    }
+
     fun addNFZGroundPoint(nfzId: Long, x: Float, z: Float) {
         flyMapFlow.update {
             it.copy(noFlyZones = it.noFlyZones.toMutableList().apply {
@@ -176,13 +184,11 @@ class CreatorViewModel() {
     }
 
     fun updateNoFlyZone(nfz: NoFlyZone) {
-//        println("upd nfz old ${flyMapFlow.value.noFlyZones} / new  $nfz")
+        println("upd nfz old ${flyMapFlow.value.noFlyZones} / new  $nfz")
         flyMapFlow.update { flyMap ->
             flyMap.copy(
-                noFlyZones = flyMap.noFlyZones.apply {
-                    this.toMutableList().replaceAll {
-                        if (it.id == nfz.id) nfz else it
-                    }
+                noFlyZones = flyMap.noFlyZones.map {
+                    if (it.id == nfz.id) nfz else it
                 }
             )
         }
