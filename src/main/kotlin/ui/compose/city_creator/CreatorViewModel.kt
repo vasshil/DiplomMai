@@ -162,7 +162,6 @@ class CreatorViewModel() {
     }
 
 
-
     fun updateBuilding(building: Building) {
         flyMapFlow.update { flyMap ->
             flyMap.copy(
@@ -201,12 +200,10 @@ class CreatorViewModel() {
         }
     }
 
-
     fun addCargo(cargo: Cargo) {
         flyMapFlow.update {
             it.copy(cargos = it.cargos + cargo)
         }
     }
-
 
 }

@@ -21,6 +21,7 @@ import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoi
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargosList
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CreateCargoDialog
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.drones.CreateDroneDialog
+import ui.compose.city_creator.widgets.side_panel.delivery_panel.drones.DroneStartPoint
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.drones.DronesList
 import ui.compose.common.DELIVERY_PANEL_BAR_SELECTED_COLOR
 import ui.compose.common.DELIVERY_PANEL_BAR_UNSELECTED_COLOR
@@ -31,6 +32,8 @@ fun DeliveryPanel(
     flyMap: FlyMap,
     addDrone: (Drone) -> Unit,
     addCargo: (Cargo) -> Unit,
+    droneStartPoint: DroneStartPoint,
+    onDroneStartPointChanged: (DroneStartPoint) -> Unit,
     cargoPoints: CargoPoints,
     onCargoPointsChanged: (CargoPoints) -> Unit,
 ) {
@@ -42,9 +45,14 @@ fun DeliveryPanel(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = cargoPoints) {
+    LaunchedEffect(key1 = droneStartPoint, key2 = cargoPoints) {
 
         println("cargoPoints: $cargoPoints")
+
+        if (droneStartPoint is DroneStartPoint.StartPointSelected) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            showDialog = true
+        }
 
         if (cargoPoints is CargoPoints.Waiting2) {
             scope.launch {
@@ -109,7 +117,25 @@ fun DeliveryPanel(
             ExtendedFloatingActionButton(
                 onClick = {
                     if (deliveryPanelMode == DeliveryPanelMode.DRONES) {
-                        showDialog = true
+                        if (droneStartPoint == DroneStartPoint.Idle) {
+                            scope.launch {
+                                onDroneStartPointChanged(DroneStartPoint.WaitingStartPoint)
+                                val result = snackbarHostState
+                                    .showSnackbar(
+                                        message = "Выберите начальную точку",
+                                        actionLabel = "Отмена",
+                                        duration = SnackbarDuration.Indefinite
+                                    )
+                                when (result) {
+                                    SnackbarResult.ActionPerformed -> {
+                                        onDroneStartPointChanged(DroneStartPoint.Idle)
+                                    }
+                                    SnackbarResult.Dismissed -> {
+//                                        onCargoPointsChanged(CargoPoints.Idle)
+                                    }
+                                }
+                            }
+                        }
                     } else if (deliveryPanelMode == DeliveryPanelMode.CARGOS) {
                         if (cargoPoints == CargoPoints.Idle) {
                             scope.launch {
@@ -129,7 +155,6 @@ fun DeliveryPanel(
                                     }
                                 }
                             }
-
                         }
 
                     }
@@ -182,10 +207,13 @@ fun DeliveryPanel(
                 onConfirm = { newDrone ->
                     addDrone(newDrone)
                     showDialog = false
+                    onDroneStartPointChanged(DroneStartPoint.Idle)
                 },
                 onDismiss = {
                     showDialog = false
-                }
+                    onDroneStartPointChanged(DroneStartPoint.Idle)
+                },
+                droneStartPoint as DroneStartPoint.StartPointSelected,
             )
         } else if (deliveryPanelMode == DeliveryPanelMode.CARGOS) {
             CreateCargoDialog(

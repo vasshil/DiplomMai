@@ -13,7 +13,8 @@ import model.drone.Drone
 fun CreateDroneDialog(
     newId: Long,
     onConfirm: (Drone) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    startPoint: DroneStartPoint.StartPointSelected
 ) {
     var batteryLevel by remember { mutableStateOf(100f) }
     var maxCargoCapacity by remember { mutableStateOf("") }
@@ -75,7 +76,8 @@ fun CreateDroneDialog(
                         Drone(
                             id = newId,
                             batteryLevel = batteryLevel.toInt(),
-                            maxCargoCapacityMass = cargo
+                            maxCargoCapacityMass = cargo,
+                            currentPosition = startPoint.start
                         )
                     )
                 },

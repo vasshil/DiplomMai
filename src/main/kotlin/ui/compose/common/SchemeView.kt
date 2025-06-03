@@ -39,6 +39,7 @@ import model.graph.FlyMapVertex
 import model.landscape.Building
 import ui.compose.city_creator.CreatorViewModel
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoints
+import ui.compose.city_creator.widgets.side_panel.delivery_panel.drones.DroneStartPoint
 import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -51,12 +52,12 @@ fun SchemeView(
     flyMap: FlyMap,
     cityCreatorMode: CreatorModeEnum = CreatorModeEnum.NONE,
     isEditorMode: Boolean = false,
-    drawBaseGraph: Boolean = true,
-    drawFullGraph: Boolean = true,
     focusedBuildingId: Long = -1,
     focusedNFZId: Long = -1,
     onClick: (() -> Unit) = {},
     showScaleButtons: Boolean = true,
+    droneStartPoint: DroneStartPoint,
+    onDroneStartPointChanged: (DroneStartPoint) -> Unit,
     cargoPoints: CargoPoints,
     onCargoPointsChanged: (CargoPoints) -> Unit,
     onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
@@ -88,7 +89,7 @@ fun SchemeView(
             modifier = Modifier.fillMaxSize()
                 .background(color = SCHEME_BACKGROUND_COLOR)
                 .clipToBounds()
-                .pointerInput(flyMap, isEditorMode, focusedBuildingId, cargoPoints) {
+                .pointerInput(flyMap, isEditorMode, focusedBuildingId, droneStartPoint, cargoPoints) {
                     detectTapGestures { tapOffset ->
 
                         onClick()
@@ -112,12 +113,14 @@ fun SchemeView(
 
                         nearestVertex?.let { vertex ->
 
-                            println("nearest: $cargoPoints / $nearestVertex / ${cargoPoints is CargoPoints.Waiting1} ")
+                            println("nearest: $cargoPoints / $nearestVertex / ${droneStartPoint} ")
                             if (cargoPoints is CargoPoints.Waiting1) {
                                 onCargoPointsChanged(CargoPoints.Waiting2(vertex.position))
                             } else if (cargoPoints is CargoPoints.Waiting2) {
-                                println("nearest: $cargoPoints / $nearestVertex / ${cargoPoints is CargoPoints.Waiting2} ")
                                 onCargoPointsChanged(CargoPoints.TwoPointSelected(cargoPoints.start, vertex.position))
+                            } else if (droneStartPoint is DroneStartPoint.WaitingStartPoint) {
+                                println(": $droneStartPoint / $nearestVertex  ")
+                                onDroneStartPointChanged(DroneStartPoint.StartPointSelected(nearestVertex.position))
                             }
                             else {
 

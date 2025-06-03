@@ -26,6 +26,7 @@ import ui.compose.city_creator.Scheme2DMode
 import ui.compose.city_creator.widgets.InfoDialog
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.DeliveryPanel
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoints
+import ui.compose.city_creator.widgets.side_panel.delivery_panel.drones.DroneStartPoint
 import ui.compose.city_creator.widgets.topbar.SimulationMode
 import ui.compose.city_creator.widgets.topbar.TopBar
 import ui.compose.common.DIVIDER_COLOR
@@ -57,8 +58,12 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
     var mousePosition by remember { mutableStateOf(Offset.Zero) }
 
+
+    var droneStartPoint by remember { mutableStateOf<DroneStartPoint>(DroneStartPoint.Idle) }
+
     // точки отправки и назначения для нового груза
     var cargoPoints by remember { mutableStateOf<CargoPoints>(CargoPoints.Idle) }
+
 
     var showWrongFileDialog by remember { mutableStateOf(false) }
 
@@ -133,8 +138,6 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                     viewModel = viewModel,
                     cityCreatorMode = editorMode,
                     isEditorMode = schemeMode == Scheme2DMode.EDITOR,
-                    drawBaseGraph = true,
-                    drawFullGraph = false,
                     focusedBuildingId = focusedBuildingId,
                     focusedNFZId = focusedNFZId,
                     onClick = {
@@ -202,9 +205,13 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                         }
 
                     },
+                    droneStartPoint = droneStartPoint,
+                    onDroneStartPointChanged = { newDroneStartPoint ->
+                        println("newDroneStartPoint $newDroneStartPoint")
+                        droneStartPoint = newDroneStartPoint
+                    },
                     cargoPoints = cargoPoints,
                     onCargoPointsChanged = { newCargoPoints ->
-                        println("newCargoPoints $newCargoPoints")
                         cargoPoints = newCargoPoints
                     }
                 ) { position, pressed ->
@@ -265,13 +272,16 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                             addCargo = { newCargo ->
                                 viewModel.addCargo(newCargo)
                             },
+                            droneStartPoint = droneStartPoint,
+                            onDroneStartPointChanged = { newStartPoint ->
+                                droneStartPoint = newStartPoint
+                            },
                             cargoPoints = cargoPoints,
                             onCargoPointsChanged = { newCargoPoints ->
                                 cargoPoints = newCargoPoints
                             }
                         )
                     }
-
 
                 }
 

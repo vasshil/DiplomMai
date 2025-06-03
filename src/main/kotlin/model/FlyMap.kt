@@ -27,7 +27,7 @@ data class FlyMap(
 ): Serializable {
 
     fun nextDroneId(): Long {
-        return (buildings.maxOfOrNull { it.id } ?: -1) + 1
+        return (drones.maxOfOrNull { it.id } ?: -1) + 1
     }
 
     fun nextNFZId(): Long {
