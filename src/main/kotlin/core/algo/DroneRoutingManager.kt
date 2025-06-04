@@ -32,12 +32,16 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
     private val obstacleIndex = STRtree()
 
     init {
-        buildObstacleIndex()
-
+//        buildObstacleIndex()
         coroutineScope.launch {
             viewModel.flyMapFlow.collectLatest {
-                flyMap = it
-//                println("manager  collect")
+                if (flyMap.buildings != it.buildings || flyMap.noFlyZones != it.noFlyZones) {
+                    println("buildObstacleIndex")
+                    flyMap = it
+                    buildObstacleIndex()
+                } else {
+                    flyMap = it
+                }
             }
         }
     }
@@ -46,10 +50,10 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         if (isRunning) return
         isRunning = true
         routingJob = coroutineScope.launch {
-            while (isActive && isRunning) {
+            while (isRunning) {
                 routeDrones()
                 moveDrones()
-                delay(1000)
+                delay(100)
             }
         }
     }
@@ -61,7 +65,7 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
 
     private fun buildObstacleIndex() {
         flyMap.buildings.forEach { building ->
-            val poly = building.toJTSPolygon()
+            val poly = building.toSafeJTSPolygon()
             obstacleIndex.insert(poly.envelopeInternal, poly)
         }
         flyMap.noFlyZones.filter { it.isActive }.forEach { zone ->
@@ -71,6 +75,7 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
             obstacleIndex.insert(poly.envelopeInternal, poly)
         }
         obstacleIndex.build()
+
     }
 
     private fun routeDrones() {
@@ -99,7 +104,7 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
                     cargos = drone.cargos + selectedCargo,
                 )
                 val updCargo = selectedCargo.copy(
-                    status = CargoStatus.ON_ROAD
+                    status = CargoStatus.IN_WORK
                 )
 
                 viewModel.updateDrone(updDrone)
@@ -137,12 +142,16 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
     }
 
     private fun generateNeighbors(point: Vector3f): List<Vector3f> {
-        val step = 1f
+        val step = 0.5f
         val directions = listOf(
-            Vector3f(step, 0f, 0f), Vector3f(-step, 0f, 0f),
-            Vector3f(0f, 0f, step), Vector3f(0f, 0f, -step),
-            Vector3f(step, 0f, step), Vector3f(-step, 0f, -step),
-            Vector3f(step, 0f, -step), Vector3f(-step, 0f, step)
+            Vector3f(step, 0f, 0f),    // вправо
+            Vector3f(-step, 0f, 0f),   // влево
+            Vector3f(0f, 0f, step),    // вперёд
+            Vector3f(0f, 0f, -step),   // назад
+            Vector3f(step, 0f, step),  // вправо-вперёд (диагональ)
+            Vector3f(-step, 0f, step), // влево-вперёд (диагональ)
+            Vector3f(step, 0f, -step), // вправо-назад (диагональ)
+            Vector3f(-step, 0f, -step) // влево-назад (диагональ)
         )
         return directions.map { Vector3f(point).add(it) }
     }
@@ -157,6 +166,9 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
 
         for (hit in hits) {
             val polygon = hit as Polygon
+//            if ((polygon.contains(line) || polygon.crosses(line)) && !polygon.boundary.covers(line)) {
+//                return true
+//            }
 //            if (polygon.contains(line)) return true // запрещаем, если линия внутри
 //            if (polygon.covers(line) && !polygon.boundary.covers(line)) return true // запрещаем, если линия строго внутри
             // Проверяем, содержится ли линия ВНУТРИ полигона (без касания границ)
@@ -166,8 +178,6 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         }
         return false // пересечений нет, либо линия только касается границы
     }
-
-//    private fun LineSegment.toGeometry(factory: GeometryFactory) = factory.createLineString(arrayOf(p0, p1))
 
     private fun heuristic(a: Vector3f, b: Vector3f): Double {
         return a.distance(b).toDouble()

@@ -40,7 +40,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
     val flyMap by viewModel.flyMapFlow.collectAsState()
 
-    println("collected fly map ${flyMap.buildings.toTypedArray().contentToString()}")
+//    println("collected fly map ${flyMap.buildings.toTypedArray().contentToString()}")
 
     var schemeMode by remember { mutableStateOf(Scheme2DMode.VIEW) }
 
@@ -55,6 +55,8 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
     var focusedBuildingId by remember { mutableLongStateOf(-1) }
 
     var focusedNFZId by remember { mutableLongStateOf(-1) }
+
+    var focusedDroneId by remember { mutableLongStateOf(-1) }
 
     var mousePosition by remember { mutableStateOf(Offset.Zero) }
 
@@ -140,6 +142,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                     isEditorMode = schemeMode == Scheme2DMode.EDITOR,
                     focusedBuildingId = focusedBuildingId,
                     focusedNFZId = focusedNFZId,
+                    focusedDroneId = focusedDroneId,
                     onClick = {
                         if (schemeMode == Scheme2DMode.EDITOR) {
                             when (editorMode) {
@@ -264,7 +267,6 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                     }
                     Scheme2DMode.VIEW -> {
                         DeliveryPanel(
-                            modifier = Modifier,
                             flyMap = flyMap,
                             addDrone = { newDrone ->
                                 viewModel.addDrone(newDrone)
@@ -279,6 +281,9 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                             cargoPoints = cargoPoints,
                             onCargoPointsChanged = { newCargoPoints ->
                                 cargoPoints = newCargoPoints
+                            },
+                            onDroneFocusChanged = { id ->
+                                focusedDroneId = id
                             }
                         )
                     }

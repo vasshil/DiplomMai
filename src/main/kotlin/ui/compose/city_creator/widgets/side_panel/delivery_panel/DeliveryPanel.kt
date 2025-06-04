@@ -28,7 +28,6 @@ import ui.compose.common.DELIVERY_PANEL_BAR_UNSELECTED_COLOR
 
 @Composable
 fun DeliveryPanel(
-    modifier: Modifier = Modifier,
     flyMap: FlyMap,
     addDrone: (Drone) -> Unit,
     addCargo: (Cargo) -> Unit,
@@ -36,6 +35,7 @@ fun DeliveryPanel(
     onDroneStartPointChanged: (DroneStartPoint) -> Unit,
     cargoPoints: CargoPoints,
     onCargoPointsChanged: (CargoPoints) -> Unit,
+    onDroneFocusChanged: (Long) -> Unit
 ) {
 
     var deliveryPanelMode by remember { mutableStateOf(DeliveryPanelMode.DRONES) }
@@ -176,10 +176,9 @@ fun DeliveryPanel(
                 modifier = Modifier.padding(padding),
                 flyMap = flyMap,
                 onFocusChange = { focused, id ->
-//                                focusedBuildingId = if (!focused) -1 else id
+                    onDroneFocusChanged(if (focused) id else -1)
                 },
                 onDroneChanged = { changedDrone ->
-//                                viewModel.updateBuilding(changedBuilding)
                 }
             )
 

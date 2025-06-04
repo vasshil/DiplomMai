@@ -19,6 +19,9 @@ data class Drone(
     val cargos: List<Cargo> = mutableListOf(),
     val currentDestination: Vector3f? = null,
     val currentWayPoint: List<Vector3f> = mutableListOf(),
+    val roadToCargoStart: List<Vector3f> = mutableListOf(),
+    val roadToCargoDestination: List<Vector3f> = mutableListOf(),
+    val roadToCargoChargeStation: List<Vector3f> = mutableListOf(),
     val currentPosition: Vector3f = Vector3f.ZERO,
 ): Serializable {
 

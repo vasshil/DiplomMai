@@ -19,15 +19,17 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.useResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.jme3.math.Vector3f
 import core.algo.LazyGraph3D
@@ -35,6 +37,7 @@ import core.algo.fastestPath3D
 import core.distanceBetween
 import core.to3D
 import model.FlyMap
+import model.drone.DroneStatus
 import model.graph.FlyMapVertex
 import model.landscape.Building
 import ui.compose.city_creator.CreatorViewModel
@@ -54,6 +57,7 @@ fun SchemeView(
     isEditorMode: Boolean = false,
     focusedBuildingId: Long = -1,
     focusedNFZId: Long = -1,
+    focusedDroneId: Long = -1,
     onClick: (() -> Unit) = {},
     showScaleButtons: Boolean = true,
     droneStartPoint: DroneStartPoint,
@@ -63,6 +67,9 @@ fun SchemeView(
     onMouseAction: (position: Offset, pressed: Boolean) -> Unit = { _, _ -> },
 ) {
 
+    val droneIcon: ImageBitmap = useResource("icons/ic_drone_mini.png") {
+        loadImageBitmap(it)
+    }
 
     var mouseCoordinate by remember { mutableStateOf(Offset.Zero) }
 
@@ -265,7 +272,11 @@ fun SchemeView(
                         color = EDGE_COLOR,
                         start = Offset(startX, startY),
                         end = Offset(endX, endY),
-                        strokeWidth = 2f
+                        strokeWidth = 2f,
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(10f, 10f), // 10px линия, 10px пробел
+                            phase = 0f              // сдвиг, можно анимировать
+                        )
                     )
 
                 }
@@ -339,7 +350,55 @@ fun SchemeView(
 
             }
 
-            flyMap.buildings
+            // маршрут сфокусированного дрона
+            if (focusedDroneId != -1L) {
+                flyMap.getDroneById(focusedDroneId)?.let { drone ->
+                    for (i in 0 until drone.currentWayPoint.lastIndex) {
+                        val from = drone.currentWayPoint[i]
+                        val to = drone.currentWayPoint[i + 1]
+                        val startX = from.x * scale + offset.x
+                        val startY = from.z * scale + offset.y
+                        val endX = to.x * scale + offset.x
+                        val endY = to.z * scale + offset.y
+
+                        drawLine(
+                            color = NO_FLY_ZONE_FOCUSED_DELETE_FILL_COLOR,
+                            start = Offset(startX, startY),
+                            end = Offset(endX, endY),
+                            strokeWidth = 4f,
+//                            pathEffect = PathEffect.dashPathEffect(
+//                                floatArrayOf(10f, 10f), // 10px линия, 10px пробел
+//                                phase = 0f              // сдвиг, можно анимировать
+//                            )
+                        )
+
+                    }
+                }
+            }
+
+            // дроны
+            flyMap.drones.forEach { drone ->
+                val color = drone.status.color//.copy(alpha = 0.5f)
+                
+                val x = drone.currentPosition.x * scale + offset.x
+                val y = drone.currentPosition.z * scale + offset.y
+
+                val r = if (focusedDroneId == drone.id) 25f else 20f
+
+                drawCircle(
+                    color = color,
+                    radius = r,
+                    center = Offset(x, y)
+                )
+
+                drawImage(
+                    image = droneIcon,
+                    dstSize = IntSize((r * 2 * 0.5f).toInt(), (r * 2 * 0.5f).toInt()),
+                    dstOffset = IntOffset((x - (r * 2 * 0.5f) / 2).toInt(), (y - (r * 2 * 0.5f) / 2).toInt()),
+                    colorFilter = ColorFilter.tint(DRONE_MINI_ICON_COLOR),
+                )
+
+            }
 
             // место курсора
             drawLine(MOUSE_POINT_COLOR, Offset(mouseCoordinate.x - 10, mouseCoordinate.y), Offset(mouseCoordinate.x + 10, mouseCoordinate.y), 1f)

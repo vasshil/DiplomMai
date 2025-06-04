@@ -31,9 +31,6 @@ data class Building(
         private const val serialVersionUID: Long = 1L
     }
 
-
-//    constructor(id: Long, groundCoords: MutableList<Vertex>, height: Float) : this(id, groundCoords.map { it.position }.toMutableList(), height)
-
     fun toJTSPolygon(coords: List<Vector3f> = groundCoords): Polygon {
         val coordinates = coords.map {
             Coordinate(it.x.toDouble(), it.z.toDouble())
