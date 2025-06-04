@@ -1,5 +1,6 @@
 package model.drone
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import ui.compose.common.*
 import java.io.Serializable

@@ -1,5 +1,6 @@
 package model.landscape
 
+import androidx.compose.runtime.Immutable
 import com.jme3.math.Vector3f
 import com.jme3.scene.Mesh
 import com.jme3.scene.VertexBuffer
@@ -17,22 +18,31 @@ import org.locationtech.jts.triangulate.polygon.ConstrainedDelaunayTriangulator
 import org.locationtech.jts.triangulate.tri.Tri
 import java.io.Serializable
 
+@Immutable
 data class Building(
     val id: Long,
     val groundCoords: List<Vector3f> = listOf(),
     val height: Float = 0f,
-    var safeDistanceCoords: List<FlyMapVertex> = listOf()
+    val safeDistanceCoords: List<FlyMapVertex> = listOf()
 ): Serializable {
 
     companion object {
         const val safeDistance = 1f
+        private const val serialVersionUID: Long = 1L
     }
-
 
 
 //    constructor(id: Long, groundCoords: MutableList<Vertex>, height: Float) : this(id, groundCoords.map { it.position }.toMutableList(), height)
 
     fun toJTSPolygon(coords: List<Vector3f> = groundCoords): Polygon {
+        val coordinates = coords.map {
+            Coordinate(it.x.toDouble(), it.z.toDouble())
+        }.toMutableList().also { it.add(it.first()) }.toTypedArray()
+        return GeometryFactory().createPolygon(coordinates)
+    }
+
+
+    fun toSafeJTSPolygon(coords: List<Vector3f> = safeDistanceCoords.map { it.position }): Polygon {
         val coordinates = coords.map {
             Coordinate(it.x.toDouble(), it.z.toDouble())
         }.toMutableList().also { it.add(it.first()) }.toTypedArray()

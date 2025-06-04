@@ -6,6 +6,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import model.FlyMap
+import model.cargo.Cargo
 import model.cargo.CargoStatus
 import model.drone.Drone
 import model.drone.DroneStatus
@@ -14,11 +15,14 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.index.strtree.STRtree
+import ui.compose.city_creator.CreatorViewModel
 import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
-class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
+class DroneRoutingManager(private val viewModel: CreatorViewModel) {
 
-    private var flyMap = flyMapFlow.value
+    private var flyMap = viewModel.flyMapFlow.value
 
     private var routingJob: Job? = null
     private var isRunning = false
@@ -31,7 +35,7 @@ class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
         buildObstacleIndex()
 
         coroutineScope.launch {
-            flyMapFlow.collectLatest {
+            viewModel.flyMapFlow.collectLatest {
                 flyMap = it
 //                println("manager  collect")
             }
@@ -89,11 +93,17 @@ class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
             val requiredBattery = estimateBatteryUsage(drone, totalPath, selectedCargo.weight)
 
             if (drone.batteryLevel >= requiredBattery) {
-                drone.currentWayPoint.clear()
-                drone.currentWayPoint.addAll(totalPath)
-                drone.status = DroneStatus.DELIVERING
-                drone.cargos.add(selectedCargo)
-                selectedCargo.status = CargoStatus.ON_ROAD
+                val updDrone = drone.copy(
+                    currentWayPoint = totalPath,
+                    status = DroneStatus.DELIVERING,
+                    cargos = drone.cargos + selectedCargo,
+                )
+                val updCargo = selectedCargo.copy(
+                    status = CargoStatus.ON_ROAD
+                )
+
+                viewModel.updateDrone(updDrone)
+                viewModel.updateCargo(updCargo)
             }
         }
     }
@@ -106,7 +116,7 @@ class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
 
         while (openSet.isNotEmpty()) {
             val current = openSet.minByOrNull { fScore[it] ?: Double.POSITIVE_INFINITY } ?: break
-            if (current.distance(end) < 1f) return (reconstructPath(cameFrom, current) + end).toMutableList()
+            if (current.distance(end) <= 1f) return (reconstructPath(cameFrom, current) + end).toMutableList()
 
             openSet.remove(current)
 
@@ -127,7 +137,7 @@ class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
     }
 
     private fun generateNeighbors(point: Vector3f): List<Vector3f> {
-        val step = 10f
+        val step = 1f
         val directions = listOf(
             Vector3f(step, 0f, 0f), Vector3f(-step, 0f, 0f),
             Vector3f(0f, 0f, step), Vector3f(0f, 0f, -step),
@@ -140,10 +150,21 @@ class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
     private fun isLineBlocked(from: Vector3f, to: Vector3f): Boolean {
         val coord1 = Coordinate(from.x.toDouble(), from.z.toDouble())
         val coord2 = Coordinate(to.x.toDouble(), to.z.toDouble())
-        val seg = org.locationtech.jts.geom.LineSegment(coord1, coord2)
+        val line = geometryFactory.createLineString(arrayOf(coord1, coord2))
         val envelope = Envelope(coord1, coord2)
         val hits = obstacleIndex.query(envelope)
-        return hits.any { (it as Polygon).intersects(seg.toGeometry(geometryFactory)) }
+//        return hits.any { (it as Polygon).intersects(seg.toGeometry(geometryFactory)) }
+
+        for (hit in hits) {
+            val polygon = hit as Polygon
+//            if (polygon.contains(line)) return true // запрещаем, если линия внутри
+//            if (polygon.covers(line) && !polygon.boundary.covers(line)) return true // запрещаем, если линия строго внутри
+            // Проверяем, содержится ли линия ВНУТРИ полигона (без касания границ)
+            if (polygon.contains(line)) {
+                return true // пересечение запрещено
+            }
+        }
+        return false // пересечений нет, либо линия только касается границы
     }
 
 //    private fun LineSegment.toGeometry(factory: GeometryFactory) = factory.createLineString(arrayOf(p0, p1))
@@ -168,30 +189,75 @@ class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
             val direction = Vector3f(target).subtract(drone.currentPosition)
             val distanceToTarget = direction.length()
 
+            var updDrone = drone.copy(
+                currentPosition = target,
+                currentWayPoint = drone.currentWayPoint.subList(1, drone.currentWayPoint.size)
+            )
+
+            var updCargo: Cargo? = drone.cargos.firstOrNull()
+
             if (distanceToTarget <= speed) {
-                drone.currentPosition.set(target)
-                drone.currentWayPoint.removeAt(0)
-                if (drone.currentWayPoint.isEmpty()) completeDroneMission(drone)
+
+                if (updDrone.currentWayPoint.isEmpty()) {
+                    val (d, c) = completeDroneMission(drone)
+                    updDrone = d
+                    updCargo = c
+                } else if (drone.currentWayPoint.size == 1) {
+                    // Последняя точка маршрута — зарядная станция
+                    updDrone = updDrone.copy(
+                        status = DroneStatus.RETURNING
+                    )
+                }
             } else {
                 direction.normalize().mult(speed)
-                drone.currentPosition.add(direction)
-                drone.batteryLevel = max(0, drone.batteryLevel - 1)
+                updDrone = updDrone.copy(
+                    batteryLevel = max(0, updDrone.batteryLevel - 1),
+                    currentPosition = updDrone.currentPosition.add(direction)
+                )
+            }
+            viewModel.updateDrone(updDrone)
+            updCargo?.let {
+                viewModel.updateCargo(it)
             }
         }
-        println(flyMap.drones.toTypedArray().contentToString())
+
     }
 
-    private fun completeDroneMission(drone: Drone) {
-        drone.cargos.forEach { it.status = CargoStatus.DONE }
-        drone.cargos.clear()
-        drone.status = DroneStatus.RETURNING
-        drone.status = DroneStatus.WAITING
+    private fun completeDroneMission(drone: Drone): Pair<Drone, Cargo?> {
+        val updDroneAndCargo = if (drone.cargos.isNotEmpty()) {
+            Pair(
+                drone.copy(
+                    cargos = drone.cargos.subList(1, drone.cargos.size),
+                    status = DroneStatus.RETURNING
+                ),
+                drone.cargos.first().copy(
+                    status = CargoStatus.DONE
+                )
+            )
+        } else if (drone.batteryLevel < 100) {
+            Pair(
+                drone.copy(
+                    batteryLevel = min(100, drone.batteryLevel + 10), // имитация зарядки
+                    status = DroneStatus.CHARGING
+                ),
+                drone.cargos.firstOrNull()
+            )
+        } else {
+            Pair(
+                drone.copy(
+                    status = DroneStatus.WAITING
+                ),
+                drone.cargos.firstOrNull()
+            )
+        }
+        return updDroneAndCargo
     }
 
     private fun findNearestChargeStation(from: Vector3f): Vector3f {
         return flyMap.buildings.flatMap { it.safeDistanceCoords }
             .filter { it.isChargeStation }
             .minByOrNull { v -> distance(from, v.position) }?.position ?: Vector3f(0f, 0f, 0f)
+//            .minByOrNull { v -> distance(from, v.position) }?.position ?: Vector3f(0f, 0f, 0f)
     }
 
     private fun distance(a: Vector3f, b: Vector3f): Float {
@@ -210,5 +276,5 @@ class DroneRoutingManager(private val flyMapFlow: StateFlow<FlyMap>) {
         return totalUsage.roundToInt()
     }
 
-    private fun Double.roundToInt(): Int = roundToInt()
+//    private fun Double.roundToInt(): Int = roundToInt()
 }

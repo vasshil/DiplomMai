@@ -13,13 +13,13 @@ import model.drone.Drone
 import model.landscape.Building
 import model.landscape.NoFlyZone
 
-class CreatorViewModel() {
+class CreatorViewModel {
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
     val flyMapFlow = MutableStateFlow(FlyMap())
 
-    val droneRoutingManager = DroneRoutingManager(flyMapFlow)
+    val droneRoutingManager = DroneRoutingManager(this)
 
     fun setCity(flyMap: FlyMap) {
         scope.launch {
@@ -30,7 +30,7 @@ class CreatorViewModel() {
 
 
     fun newBuilding(): Long {
-        val newId = flyMapFlow.value.nextDroneId()
+        val newId = flyMapFlow.value.nextBuildingId()
         val newBuilding = Building(newId)
         flyMapFlow.update {
             it.copy(buildings = it.buildings + newBuilding)
@@ -170,16 +170,6 @@ class CreatorViewModel() {
                 }.toMutableList()
             )
         }
-//        scope.launch {
-//            cityFlow.emit (//{ city ->
-//                cityFlow.value.copy(
-//                    buildings = cityFlow.value.buildings.map { b ->
-//                        if (b.id == building.id) building else b
-//                    }.toMutableList()
-//                )
-//            )
-//        }
-
     }
 
     fun updateNoFlyZone(nfz: NoFlyZone) {
@@ -203,6 +193,27 @@ class CreatorViewModel() {
     fun addCargo(cargo: Cargo) {
         flyMapFlow.update {
             it.copy(cargos = it.cargos + cargo)
+        }
+    }
+
+
+    fun updateDrone(drone: Drone) {
+        flyMapFlow.update { flyMap ->
+            flyMap.copy(
+                drones = flyMap.drones.map { d ->
+                    if (d.id == drone.id) drone else d
+                }.toMutableList()
+            )
+        }
+    }
+
+    fun updateCargo(cargo: Cargo) {
+        flyMapFlow.update { flyMap ->
+            flyMap.copy(
+                cargos = flyMap.cargos.map { c ->
+                    if (c.timeCreation == cargo.timeCreation) cargo else c
+                }.toMutableList()
+            )
         }
     }
 

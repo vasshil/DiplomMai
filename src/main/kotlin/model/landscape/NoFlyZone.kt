@@ -1,11 +1,13 @@
 package model.landscape
 
+import androidx.compose.runtime.Immutable
 import com.jme3.math.Vector3f
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import java.io.Serializable
 
+@Immutable
 data class NoFlyZone(
     val id: Long,
     val isActive: Boolean = true,
@@ -14,6 +16,7 @@ data class NoFlyZone(
 
     companion object {
         const val safeDistance = 1f
+        private const val serialVersionUID: Long = 1L
     }
 
     fun toJTSPolygon(coords: List<Vector3f> = groundCoords): Polygon {

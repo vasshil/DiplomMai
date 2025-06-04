@@ -1,5 +1,6 @@
 package model
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import com.jme3.math.Vector3f
 import core.distanceBetween
@@ -19,6 +20,7 @@ import org.locationtech.jts.geom.*
 import java.io.*
 import kotlin.math.hypot
 
+@Immutable
 data class FlyMap(
     val buildings: List<Building> = listOf(),
     val noFlyZones: List<NoFlyZone> = listOf(),
@@ -26,12 +28,16 @@ data class FlyMap(
     val cargos: List<Cargo> = listOf(),
 ): Serializable {
 
-    fun nextDroneId(): Long {
-        return (drones.maxOfOrNull { it.id } ?: -1) + 1
+    fun nextBuildingId(): Long {
+        return (buildings.maxOfOrNull { it.id } ?: -1) + 1
     }
 
     fun nextNFZId(): Long {
         return (noFlyZones.maxOfOrNull { it.id } ?: -1) + 1
+    }
+
+    fun nextDroneId(): Long {
+        return (drones.maxOfOrNull { it.id } ?: -1) + 1
     }
 
     fun getNearestVertex(mouse: Offset): FlyMapVertex? {
@@ -155,13 +161,12 @@ data class FlyMap(
             return if (file.exists()) {
                 try {
                     file.inputStream().use {
-                        (ObjectInputStream(it).readObject() as FlyMap).apply {
-                            buildings.forEach {
-                                it.safeDistanceCoords = it.getKeyNodes()
+                        val fm = (ObjectInputStream(it).readObject() as FlyMap)
+                        fm.copy(
+                            buildings = fm.buildings.map { b ->
+                                b.copy(safeDistanceCoords = b.getKeyNodes())
                             }
-//                            graph = createGraphAtHeight()
-//                            println(graph.toString())
-                        }
+                        )
                     }
                 } catch (e: Exception) {
                     println("read file error $e")
@@ -173,6 +178,8 @@ data class FlyMap(
             }
 
         }
+
+        private const val serialVersionUID: Long = 1L
     }
 
 }

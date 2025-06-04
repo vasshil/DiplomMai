@@ -1,17 +1,17 @@
 package model.graph
 
+import androidx.compose.runtime.Immutable
 import com.jme3.math.Vector3f
 import org.locationtech.jts.geom.Coordinate
 import java.io.Serializable
 
 
+@Immutable
 data class FlyMapVertex(
     val buildingId: Long,
     val position: Vector3f,
     val edges: MutableList<FlyMapEdgeEdge> = mutableListOf(),
     var isChargeStation: Boolean = false,
-//    var isBaseStation: Boolean = false,
-//    var isDestination: Boolean = false,
 ): Serializable {
 
     constructor(buildingId: Long, x: Float, y: Float, z: Float) : this(buildingId, Vector3f(x, y, z))
@@ -37,6 +37,10 @@ data class FlyMapVertex(
         return Coordinate(position.x.toDouble(), position.z.toDouble())
     }
 
+    companion object {
+        // Менять это число НЕЛЬЗЯ, пока вы хотите читать старые файлы
+        private const val serialVersionUID: Long = 1L
+    }
 }
 
 //fun Vector3f.toVertex() = Vertex(this)

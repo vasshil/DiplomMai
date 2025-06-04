@@ -3,21 +3,23 @@ package model.drone
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.BatteryUnknown
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.runtime.Immutable
 import com.jme3.math.Vector3f
 import model.cargo.Cargo
 import ui.compose.common.DRONE_BATTERY_LOW_COLOR
 import ui.compose.common.DRONE_BATTERY_NORMAL_COLOR
 import java.io.Serializable
 
+@Immutable
 data class Drone(
     val id: Long,
-    var status: DroneStatus = DroneStatus.WAITING,
-    var batteryLevel: Int = 100, // 0 - 100
+    val status: DroneStatus = DroneStatus.WAITING,
+    val batteryLevel: Int = 100, // 0 - 100
     val maxCargoCapacityMass: Double, // кг, макс вместимость
-    val cargos: MutableList<Cargo> = mutableListOf(),
-    var currentDestination: Vector3f? = null,
-    var currentWayPoint: MutableList<Vector3f> = mutableListOf(),
-    var currentPosition: Vector3f = Vector3f.ZERO,
+    val cargos: List<Cargo> = mutableListOf(),
+    val currentDestination: Vector3f? = null,
+    val currentWayPoint: List<Vector3f> = mutableListOf(),
+    val currentPosition: Vector3f = Vector3f.ZERO,
 ): Serializable {
 
     fun getBatteryIcon() = if (status != DroneStatus.CHARGING) {
@@ -38,4 +40,8 @@ data class Drone(
 
     val currentCargoMass: Double get() = cargos.sumOf { it.weight }
 
+    companion object {
+        // Менять это число НЕЛЬЗЯ, пока вы хотите читать старые файлы
+        private const val serialVersionUID: Long = 1L
+    }
 }
