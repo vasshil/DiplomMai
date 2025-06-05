@@ -198,23 +198,34 @@ class CreatorViewModel {
 
 
     fun updateDrone(drone: Drone) {
-        flyMapFlow.update { flyMap ->
-            flyMap.copy(
-                drones = flyMap.drones.map { d ->
-                    if (d.id == drone.id) drone else d
-                }.toMutableList()
-            )
-        }
+
+        flyMapFlow.value = flyMapFlow.value.copy(
+            drones = flyMapFlow.value.drones.map { d ->
+                if (d.id == drone.id) drone else d
+            }.toMutableList()
+        )
+//        flyMapFlow.update { flyMap ->
+//            flyMap.copy(
+//                drones = flyMap.drones.map { d ->
+//                    if (d.id == drone.id) drone else d
+//                }.toMutableList()
+//            )
+//        }
     }
 
     fun updateCargo(cargo: Cargo) {
-        flyMapFlow.update { flyMap ->
-            flyMap.copy(
-                cargos = flyMap.cargos.map { c ->
-                    if (c.timeCreation == cargo.timeCreation) cargo else c
-                }.toMutableList()
-            )
-        }
+        flyMapFlow.value = flyMapFlow.value.copy(
+            cargos = flyMapFlow.value.cargos.map { c ->
+                if (c.timeCreation == cargo.timeCreation) cargo else c
+            }.toMutableList()
+        )
+//        flyMapFlow.update { flyMap ->
+//            flyMap.copy(
+//                cargos = flyMap.cargos.map { c ->
+//                    if (c.timeCreation == cargo.timeCreation) cargo else c
+//                }.toMutableList()
+//            )
+//        }
     }
 
 }

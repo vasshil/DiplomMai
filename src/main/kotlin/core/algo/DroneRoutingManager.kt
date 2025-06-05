@@ -249,7 +249,8 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
                             currentWayPoint = drone.roadToCargoDestination,
                             roadToCargoStart = emptyList(),
                             status = DroneStatus.DELIVERING,
-                            cargos = cargoInWork?.let { drone.cargos + cargoInWork } ?: drone.cargos
+                            cargos = cargoInWork?.let { listOf(cargoInWork) } ?: drone.cargos
+//                            cargos = cargoInWork?.let { drone.cargos + cargoInWork } ?: drone.cargos
                         ))
 
                         flyMap.getCargoByDroneId(drone.id)?.let {
@@ -282,9 +283,11 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
                             // нет зарядных станций
                             viewModel.updateDrone(drone.copy(
                                 status = DroneStatus.WAITING,
+                                currentWayPoint = emptyList(),
                                 roadToCargoStart = emptyList(),
                                 roadToCargoDestination = emptyList(),
-                                roadToCargoChargeStation = emptyList()
+                                roadToCargoChargeStation = emptyList(),
+                                cargos = emptyList()
                             ))
                         }
                     } else if (findNearestChargeStation(drone.currentPosition) != null &&
