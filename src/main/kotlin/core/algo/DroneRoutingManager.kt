@@ -29,10 +29,9 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     private val speed = 5f // условная скорость дрона (м/с)
     private val geometryFactory = GeometryFactory()
-    private val obstacleIndex = STRtree()
+    private var obstacleIndex = STRtree()
 
     init {
-//        buildObstacleIndex()
         coroutineScope.launch {
             viewModel.flyMapFlow.collectLatest {
                 if (flyMap.buildings != it.buildings || flyMap.noFlyZones != it.noFlyZones) {
@@ -52,8 +51,10 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         routingJob = coroutineScope.launch {
             while (isRunning) {
                 routeDrones()
-                moveDrones()
-                delay(100)
+                try {
+                    moveDrones()
+                } catch (_: Exception) {}
+                delay(50)
             }
         }
     }
@@ -64,22 +65,32 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
     }
 
     private fun buildObstacleIndex() {
+        obstacleIndex = STRtree()
         flyMap.buildings.forEach { building ->
-            val poly = building.toSafeJTSPolygon()
-            obstacleIndex.insert(poly.envelopeInternal, poly)
+            if (building.groundCoords.size > 1) {
+                val poly = building.toSafeJTSPolygon()
+                obstacleIndex.insert(poly.envelopeInternal, poly)
+            }
+
         }
         flyMap.noFlyZones.filter { it.isActive }.forEach { zone ->
-            val coords = zone.groundCoords.map { Coordinate(it.x.toDouble(), it.z.toDouble()) } +
-                    Coordinate(zone.groundCoords.first().x.toDouble(), zone.groundCoords.first().z.toDouble())
-            val poly = geometryFactory.createPolygon(coords.toTypedArray())
-            obstacleIndex.insert(poly.envelopeInternal, poly)
+            if (zone.groundCoords.size > 1) {
+                val coords = zone.groundCoords.map { Coordinate(it.x.toDouble(), it.z.toDouble()) } +
+                        Coordinate(zone.groundCoords.first().x.toDouble(), zone.groundCoords.first().z.toDouble())
+                val poly = geometryFactory.createPolygon(coords.toTypedArray())
+                obstacleIndex.insert(poly.envelopeInternal, poly)
+            }
+
         }
         obstacleIndex.build()
 
     }
 
     private fun routeDrones() {
-        val availableDrones = flyMap.drones.filter { it.status == DroneStatus.WAITING && it.batteryLevel > 20 && it.currentWayPoint.isEmpty() }
+        val availableDrones = flyMap.drones.filter {
+            (it.status == DroneStatus.WAITING || it.status == DroneStatus.CHARGING) &&
+                    it.batteryLevel > 20 &&
+                    it.currentWayPoint.isEmpty() }
         val availableCargos = flyMap.cargos.filter { it.status == CargoStatus.WAITING }
 
         for (drone in availableDrones) {
@@ -90,21 +101,26 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
                 distance(drone.currentPosition, cargo.startVertex)
             } ?: continue
 
+            if (flyMap.getCargoByDroneId(drone.id)?.timeCreation == selectedCargo.timeCreation) continue
+
             val pathToPickup = findPath(drone.currentPosition, selectedCargo.startVertex)
             val pathToDropoff = findPath(selectedCargo.startVertex, selectedCargo.destination)
-            val pathToCharger = findPath(selectedCargo.destination, findNearestChargeStation(selectedCargo.destination))
+            val pathToCharger = findPath(selectedCargo.destination, findNearestChargeStation(selectedCargo.destination) ?: selectedCargo.destination)
 
             val totalPath = pathToPickup + pathToDropoff + pathToCharger
             val requiredBattery = estimateBatteryUsage(drone, totalPath, selectedCargo.weight)
 
             if (drone.batteryLevel >= requiredBattery) {
                 val updDrone = drone.copy(
-                    currentWayPoint = totalPath,
+                    currentWayPoint = pathToPickup,
                     status = DroneStatus.DELIVERING,
-                    cargos = drone.cargos + selectedCargo,
+                    roadToCargoStart = pathToPickup,
+                    roadToCargoDestination = pathToDropoff,
+                    roadToCargoChargeStation = pathToCharger,
                 )
                 val updCargo = selectedCargo.copy(
-                    status = CargoStatus.IN_WORK
+                    status = CargoStatus.IN_WORK,
+                    droneId = drone.id
                 )
 
                 viewModel.updateDrone(updDrone)
@@ -142,8 +158,8 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
     }
 
     private fun generateNeighbors(point: Vector3f): List<Vector3f> {
-        val step = 0.5f
-        val directions = listOf(
+        val step = 1f
+        val directions = mutableListOf(
             Vector3f(step, 0f, 0f),    // вправо
             Vector3f(-step, 0f, 0f),   // влево
             Vector3f(0f, 0f, step),    // вперёд
@@ -153,6 +169,16 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
             Vector3f(step, 0f, -step), // вправо-назад (диагональ)
             Vector3f(-step, 0f, -step) // влево-назад (диагональ)
         )
+
+        // Дополнительно: проверяем прямую видимость до всех безопасных вершин
+//        val st = System.currentTimeMillis()
+//        val keyNodes = flyMap.buildings.flatMap { it.safeDistanceCoords }
+//        keyNodes.forEach { node ->
+//            if (!isLineBlocked(point, node.position)) {
+//                directions.add(node.position)
+//            }
+//        }
+//        println("time ${System.currentTimeMillis() - st}")
         return directions.map { Vector3f(point).add(it) }
     }
 
@@ -162,15 +188,9 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         val line = geometryFactory.createLineString(arrayOf(coord1, coord2))
         val envelope = Envelope(coord1, coord2)
         val hits = obstacleIndex.query(envelope)
-//        return hits.any { (it as Polygon).intersects(seg.toGeometry(geometryFactory)) }
 
         for (hit in hits) {
             val polygon = hit as Polygon
-//            if ((polygon.contains(line) || polygon.crosses(line)) && !polygon.boundary.covers(line)) {
-//                return true
-//            }
-//            if (polygon.contains(line)) return true // запрещаем, если линия внутри
-//            if (polygon.covers(line) && !polygon.boundary.covers(line)) return true // запрещаем, если линия строго внутри
             // Проверяем, содержится ли линия ВНУТРИ полигона (без касания границ)
             if (polygon.contains(line)) {
                 return true // пересечение запрещено
@@ -194,80 +214,109 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
     }
 
     private fun moveDrones() {
-        for (drone in flyMap.drones.filter { it.currentWayPoint.isNotEmpty() }) {
-            val target = drone.currentWayPoint.first()
-            val direction = Vector3f(target).subtract(drone.currentPosition)
-            val distanceToTarget = direction.length()
-
-            var updDrone = drone.copy(
-                currentPosition = target,
-                currentWayPoint = drone.currentWayPoint.subList(1, drone.currentWayPoint.size)
-            )
-
-            var updCargo: Cargo? = drone.cargos.firstOrNull()
-
-            if (distanceToTarget <= speed) {
-
-                if (updDrone.currentWayPoint.isEmpty()) {
-                    val (d, c) = completeDroneMission(drone)
-                    updDrone = d
-                    updCargo = c
-                } else if (drone.currentWayPoint.size == 1) {
-                    // Последняя точка маршрута — зарядная станция
-                    updDrone = updDrone.copy(
-                        status = DroneStatus.RETURNING
+        for (drone in flyMap.drones) {
+            if (drone.status == DroneStatus.CHARGING) {
+                // заряжаемся
+                viewModel.updateDrone(
+                    drone.copy(
+                        status = if (drone.batteryLevel < 100) DroneStatus.CHARGING else DroneStatus.WAITING,
+                        batteryLevel = if (drone.batteryLevel < 100) drone.batteryLevel + 1 else 100,
                     )
-                }
+                )
             } else {
-                direction.normalize().mult(speed)
-                updDrone = updDrone.copy(
-                    batteryLevel = max(0, updDrone.batteryLevel - 1),
-                    currentPosition = updDrone.currentPosition.add(direction)
-                )
+                if (drone.currentWayPoint.isNotEmpty()) {
+                    // перемещаемся по текущему маршруту
+
+                    val target = drone.currentWayPoint.first()
+
+                    val updDrone = drone.copy(
+                        currentPosition = target,
+                        currentWayPoint = drone.currentWayPoint.subList(1, drone.currentWayPoint.size)
+//                        batteryLevel = max(0, updDrone.batteryLevel - 1),
+                    )
+
+                    viewModel.updateDrone(updDrone)
+
+                } else {
+                    if (drone.roadToCargoDestination.isNotEmpty() && drone.currentPosition.distance(drone.roadToCargoDestination.first()) <= 1) {
+                        // переходит на начало доставки
+
+                        println("drone ${drone.id} start delivery")
+
+                        val cargoInWork: Cargo? = flyMap.getCargoByDroneId(drone.id)
+
+                        viewModel.updateDrone(drone.copy(
+                            currentWayPoint = drone.roadToCargoDestination,
+                            roadToCargoStart = emptyList(),
+                            status = DroneStatus.DELIVERING,
+                            cargos = cargoInWork?.let { drone.cargos + cargoInWork } ?: drone.cargos
+                        ))
+
+                        flyMap.getCargoByDroneId(drone.id)?.let {
+                            viewModel.updateCargo(it.copy(
+                                status = CargoStatus.ON_ROAD
+                            ))
+                        }
+
+                    }
+                    else if (drone.currentPosition.distance(drone.roadToCargoChargeStation.first()) <= 1 && drone.status == DroneStatus.DELIVERING) {
+
+                        println("drone ${drone.id} finish delivery, go to charging ${drone.roadToCargoChargeStation.toTypedArray().contentToString()}")
+
+                        // на зарядку
+                        viewModel.updateDrone(drone.copy(
+                            currentWayPoint = drone.roadToCargoChargeStation,
+                            roadToCargoDestination = emptyList(),
+                            status = DroneStatus.RETURNING,
+                            cargos = emptyList(),
+                        ))
+                        drone.cargos.firstOrNull()?.let {
+                            viewModel.updateCargo(it.copy(
+                                status = CargoStatus.DONE,
+                                droneId = -1
+                            ))
+                        }
+
+
+                        if (findNearestChargeStation(drone.currentPosition) == null) {
+                            // нет зарядных станций
+                            viewModel.updateDrone(drone.copy(
+                                status = DroneStatus.WAITING,
+                                roadToCargoStart = emptyList(),
+                                roadToCargoDestination = emptyList(),
+                                roadToCargoChargeStation = emptyList()
+                            ))
+                        }
+                    } else if (findNearestChargeStation(drone.currentPosition) != null &&
+                        drone.currentPosition.distance(findNearestChargeStation(drone.currentPosition)) <= 1 &&
+                        drone.status == DroneStatus.RETURNING &&
+                        drone.cargos.isEmpty()) {
+
+                        println("drone ${drone.id} charging")
+
+                        // заряжаемся
+                        viewModel.updateDrone(drone.copy(
+                            status = DroneStatus.CHARGING,
+                            currentWayPoint = emptyList(),
+                            roadToCargoStart = emptyList(),
+                            roadToCargoDestination = emptyList(),
+                            roadToCargoChargeStation = emptyList()
+                        ))
+
+                    }
+
+                }
+
             }
-            viewModel.updateDrone(updDrone)
-            updCargo?.let {
-                viewModel.updateCargo(it)
-            }
+
         }
 
     }
 
-    private fun completeDroneMission(drone: Drone): Pair<Drone, Cargo?> {
-        val updDroneAndCargo = if (drone.cargos.isNotEmpty()) {
-            Pair(
-                drone.copy(
-                    cargos = drone.cargos.subList(1, drone.cargos.size),
-                    status = DroneStatus.RETURNING
-                ),
-                drone.cargos.first().copy(
-                    status = CargoStatus.DONE
-                )
-            )
-        } else if (drone.batteryLevel < 100) {
-            Pair(
-                drone.copy(
-                    batteryLevel = min(100, drone.batteryLevel + 10), // имитация зарядки
-                    status = DroneStatus.CHARGING
-                ),
-                drone.cargos.firstOrNull()
-            )
-        } else {
-            Pair(
-                drone.copy(
-                    status = DroneStatus.WAITING
-                ),
-                drone.cargos.firstOrNull()
-            )
-        }
-        return updDroneAndCargo
-    }
-
-    private fun findNearestChargeStation(from: Vector3f): Vector3f {
+    private fun findNearestChargeStation(from: Vector3f): Vector3f? {
         return flyMap.buildings.flatMap { it.safeDistanceCoords }
             .filter { it.isChargeStation }
-            .minByOrNull { v -> distance(from, v.position) }?.position ?: Vector3f(0f, 0f, 0f)
-//            .minByOrNull { v -> distance(from, v.position) }?.position ?: Vector3f(0f, 0f, 0f)
+            .minByOrNull { v -> distance(from, v.position) }?.position
     }
 
     private fun distance(a: Vector3f, b: Vector3f): Float {
@@ -286,5 +335,4 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         return totalUsage.roundToInt()
     }
 
-//    private fun Double.roundToInt(): Int = roundToInt()
 }

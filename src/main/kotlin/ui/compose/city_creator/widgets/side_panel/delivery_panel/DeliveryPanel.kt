@@ -35,7 +35,8 @@ fun DeliveryPanel(
     onDroneStartPointChanged: (DroneStartPoint) -> Unit,
     cargoPoints: CargoPoints,
     onCargoPointsChanged: (CargoPoints) -> Unit,
-    onDroneFocusChanged: (Long) -> Unit
+    onDroneFocusChanged: (Long) -> Unit,
+    onCargoFocusChanged: (Long) -> Unit
 ) {
 
     var deliveryPanelMode by remember { mutableStateOf(DeliveryPanelMode.DRONES) }
@@ -187,8 +188,8 @@ fun DeliveryPanel(
             CargosList(
                 modifier = Modifier.padding(padding),
                 flyMap = flyMap,
-                onFocusChange = { focused, id ->
-
+                onFocusChange = { focused, cargo ->
+                    onCargoFocusChanged(if (focused) cargo.timeCreation else -1)
                 },
                 onCargoChanged = { changedCargo ->
 

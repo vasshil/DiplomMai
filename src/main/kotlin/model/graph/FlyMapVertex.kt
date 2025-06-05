@@ -10,14 +10,13 @@ import java.io.Serializable
 data class FlyMapVertex(
     val buildingId: Long,
     val position: Vector3f,
-    val edges: MutableList<FlyMapEdgeEdge> = mutableListOf(),
     var isChargeStation: Boolean = false,
 ): Serializable {
 
     constructor(buildingId: Long, x: Float, y: Float, z: Float) : this(buildingId, Vector3f(x, y, z))
 
     override fun hashCode(): Int {
-        return position.hashCode()
+        return "$buildingId$position$isChargeStation".hashCode()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -26,7 +25,7 @@ data class FlyMapVertex(
 
         other as FlyMapVertex
 
-        return position == other.position
+        return buildingId == other.buildingId && position == other.position && isChargeStation == other.isChargeStation
     }
 
     override fun toString(): String {

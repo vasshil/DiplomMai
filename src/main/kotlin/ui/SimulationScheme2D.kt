@@ -58,6 +58,8 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
     var focusedDroneId by remember { mutableLongStateOf(-1) }
 
+    var focusedCargoId by remember { mutableLongStateOf(-1) }
+
     var mousePosition by remember { mutableStateOf(Offset.Zero) }
 
 
@@ -143,6 +145,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                     focusedBuildingId = focusedBuildingId,
                     focusedNFZId = focusedNFZId,
                     focusedDroneId = focusedDroneId,
+                    focusedCargoId = focusedCargoId,
                     onClick = {
                         if (schemeMode == Scheme2DMode.EDITOR) {
                             when (editorMode) {
@@ -284,6 +287,9 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                             },
                             onDroneFocusChanged = { id ->
                                 focusedDroneId = id
+                            },
+                            onCargoFocusChanged = { timeCreation ->
+                                focusedCargoId = timeCreation
                             }
                         )
                     }

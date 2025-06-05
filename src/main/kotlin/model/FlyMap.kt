@@ -57,6 +57,10 @@ data class FlyMap(
 
     fun getDroneById(id: Long) = drones.firstOrNull { it.id == id }
 
+    fun getCargoById(id: Long) = cargos.firstOrNull { it.timeCreation == id }
+
+    fun getCargoByDroneId(id: Long) = cargos.firstOrNull { it.droneId == id }
+
     private fun checkEdgeBuildingsIntersection(edge: LineString, buildings: List<Polygon>): Boolean {
         for (building in buildings) {
             println(building.intersection(edge).coordinates.contentToString())

@@ -14,8 +14,8 @@ data class Graph3D(
 
     fun add(edge: FlyMapEdgeEdge) {
         edges.add(edge)
-        edge.vertex1.edges.add(edge)
-        edge.vertex2.edges.add(edge)
+//        edge.vertex1.edges.add(edge)
+//        edge.vertex2.edges.add(edge)
     }
 
     fun add(buildingId: Long, vector: Vector3f) {

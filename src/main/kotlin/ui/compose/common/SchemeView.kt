@@ -44,8 +44,10 @@ import ui.compose.city_creator.CreatorViewModel
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.cargos.CargoPoints
 import ui.compose.city_creator.widgets.side_panel.delivery_panel.drones.DroneStartPoint
 import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
+import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -58,6 +60,7 @@ fun SchemeView(
     focusedBuildingId: Long = -1,
     focusedNFZId: Long = -1,
     focusedDroneId: Long = -1,
+    focusedCargoId: Long = -1,
     onClick: (() -> Unit) = {},
     showScaleButtons: Boolean = true,
     droneStartPoint: DroneStartPoint,
@@ -366,13 +369,69 @@ fun SchemeView(
                             start = Offset(startX, startY),
                             end = Offset(endX, endY),
                             strokeWidth = 4f,
-//                            pathEffect = PathEffect.dashPathEffect(
-//                                floatArrayOf(10f, 10f), // 10px линия, 10px пробел
-//                                phase = 0f              // сдвиг, можно анимировать
-//                            )
                         )
 
                     }
+                }
+            }
+
+            // путь для груза в виде стрелки
+            if (focusedCargoId != -1L) {
+                flyMap.getCargoById(focusedCargoId)?.let { cargo ->
+                    val strokeWidth = 6f
+                    val headLength = 33f
+                    val headAngleDeg = 25f
+                    val from = cargo.startVertex
+                    val to = cargo.destination
+                    val start = Offset(from.x * scale + offset.x, from.z * scale + offset.y)
+                    val end = Offset(to.x * scale + offset.x, to.z * scale + offset.y)
+
+                    // ► 2. Векторы для «головки»
+                    val dx = end.x - start.x
+                    val dy = end.y - start.y
+                    val len = hypot(dx, dy)
+
+                    if (len != 0f) {
+
+                        // ► 1. Ствол стрелки
+                        drawLine(
+                            color = CARGO_ARROW_COLOR,
+                            start = start,
+                            end = end,
+                            strokeWidth = strokeWidth,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(20f, 20f), // 10px линия, 10px пробел
+                                phase = 0f              // сдвиг, можно анимировать
+                            )
+                        )
+
+                        // нормализованный вектор направления
+                        val ux = dx / len
+                        val uy = dy / len
+
+                        // угол в радианах
+                        val angleRad = Math.toRadians(headAngleDeg.toDouble()).toFloat()
+
+                        // матрица поворота (cos ± sin)
+                        fun rotate(x: Float, y: Float, a: Float): Offset =
+                            Offset(
+                                x * cos(a) - y * sin(a),
+                                x * sin(a) + y * cos(a)
+                            )
+
+                        // базовый вектор длиной headLength, направленный назад от конца стрелки
+                        val base = Offset(-ux * headLength, -uy * headLength)
+
+                        // два плеча «головки»
+                        val left  = rotate(base.x, base.y, +angleRad) + end
+                        val right = rotate(base.x, base.y, -angleRad) + end
+
+                        // ► 3. Отрисовка «головки»
+                        drawLine(CARGO_ARROW_COLOR, end, left,  strokeWidth)
+                        drawLine(CARGO_ARROW_COLOR, end, right, strokeWidth)
+
+                    }
+
                 }
             }
 
