@@ -33,7 +33,7 @@ class City1 : SimpleApplication() {
 
         val ground = initEnvironment()
 
-        val city = FlyMap.loadFromFile("city1234.txt") ?: return
+        val city = FlyMap.loadFromFile("flyMap1.txt") ?: return
 
         val buildingsGeometry = mutableListOf<Geometry>()
 
@@ -90,18 +90,16 @@ class City1 : SimpleApplication() {
         val building = Geometry("Building", buildingMesh)
 
         // Устанавливаем прозрачный материал
-        val material = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")
-//        material.setBoolean("UseMaterialColors",true)
-//        material.setColor("Ambient", ColorRGBA.Blue)
-//        material.setColor("Diffuse", ColorRGBA.Blue)
-        material.setColor("Color", FOCUSED_BUILDING_COLOR.toColorRGBA(0.9f))
-//        material.setColor("Color", ColorRGBA.Blue.mult(ColorRGBA(1f, 1f, 1f, 0.5f))) // Полупрозрачный синий
-        material.isTransparent = true
-        material.additionalRenderState.blendMode = RenderState.BlendMode.Alpha;
-        material.additionalRenderState.faceCullMode = RenderState.FaceCullMode.Off
-//        material.additionalRenderState.isWireframe = true
+        val material = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
+        material.setBoolean("UseMaterialColors", true)
+        material.setColor("Ambient", ColorRGBA.Blue)
+        material.setColor("Diffuse", ColorRGBA(0f, 0f, 0.6f, 1f)) // основной цвет
+        material.setColor("Specular", ColorRGBA.White)  // блик
+        material.setFloat("Shininess", 4f)
+        material.additionalRenderState.faceCullMode = RenderState.FaceCullMode.Back  // рисуем только лицевые стороны
+
         building.material = material
-        building.queueBucket = RenderQueue.Bucket.Transparent
+//        building.queueBucket = RenderQueue.Bucket.Transparent
 
         // Добавляем тени
         building.shadowMode = RenderQueue.ShadowMode.CastAndReceive
@@ -110,6 +108,10 @@ class City1 : SimpleApplication() {
         val light = DirectionalLight()
         light.direction = Vector3f(-0.5f, -0.5f, -0.5f).normalizeLocal()
         rootNode.addLight(light)
+
+        val ambient = AmbientLight()
+        ambient.color = ColorRGBA.White.mult(0.3f)
+        rootNode.addLight(ambient)
 
         val shadowRenderer = DirectionalLightShadowRenderer(assetManager, 1024, 3)
         shadowRenderer.light = light
@@ -120,6 +122,15 @@ class City1 : SimpleApplication() {
         viewPort.addProcessor(fpp)
 
         rootNode.attachChild(building)
+
+        val wireframeMaterial = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")
+        wireframeMaterial.setColor("Color", ColorRGBA.Black)
+        wireframeMaterial.additionalRenderState.isWireframe = true
+
+        val wireframeGeom = Geometry("Building_Wireframe_${b.id}", buildingMesh)
+        wireframeGeom.material = wireframeMaterial
+        wireframeGeom.shadowMode = RenderQueue.ShadowMode.Off
+        rootNode.attachChild(wireframeGeom)
 
         return building
     }
@@ -190,7 +201,7 @@ class City1 : SimpleApplication() {
 fun SimpleApplication.initEnvironment(): Geometry {
 
     // Создаем плоскость (основу) светло-серого цвета
-    val groundBox = Box(100f, 0.1f, 100f) // Плоскость размером 100x100
+    val groundBox = Box(300f, 0.1f, 300f) // Плоскость размером 100x100
     val ground = Geometry("Ground", groundBox)
     val groundMat = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
     groundMat.setBoolean("UseMaterialColors", true)

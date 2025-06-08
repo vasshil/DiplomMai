@@ -16,11 +16,15 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.index.strtree.STRtree
 import ui.compose.city_creator.CreatorViewModel
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class DroneRoutingManager(private val viewModel: CreatorViewModel) {
+class DroneRoutingManager(
+    private val viewModel: CreatorViewModel,
+    private val drawOpenSet: (List<Vector3f>) -> Unit,
+) {
 
     private var flyMap = viewModel.flyMapFlow.value
 
@@ -30,6 +34,10 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
     private val speed = 5f // условная скорость дрона (м/с)
     private val geometryFactory = GeometryFactory()
     private var obstacleIndex = STRtree()
+
+    companion object {
+        private val SAFE_HEIGHT = 10f
+    }
 
     init {
         coroutineScope.launch {
@@ -50,10 +58,14 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         isRunning = true
         routingJob = coroutineScope.launch {
             while (isRunning) {
-                routeDrones()
+                launch {
+                    routeDrones()
+                }
+
                 try {
                     moveDrones()
                 } catch (_: Exception) {}
+                viewModel.updateFlyMap(flyMap)
                 delay(50)
             }
         }
@@ -123,21 +135,26 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
                     droneId = drone.id
                 )
 
-                viewModel.updateDrone(updDrone)
-                viewModel.updateCargo(updCargo)
+                updateDrone(updDrone)
+                updateCargo(updCargo)
             }
         }
     }
 
-    private fun findPath(start: Vector3f, end: Vector3f): MutableList<Vector3f> {
+    private fun findPath(start: Vector3f, end: Vector3f): List<Vector3f> {
         val openSet = mutableListOf(start)
         val cameFrom = mutableMapOf<Vector3f, Vector3f?>()
         val gScore = mutableMapOf(start to 0.0)
         val fScore = mutableMapOf(start to heuristic(start, end))
 
         while (openSet.isNotEmpty()) {
+//            drawOpenSet(openSet)
+//            Thread.sleep(2)
             val current = openSet.minByOrNull { fScore[it] ?: Double.POSITIVE_INFINITY } ?: break
-            if (current.distance(end) <= 1f) return (reconstructPath(cameFrom, current) + end).toMutableList()
+            if (current.add(Vector3f(0f, 0f, 0f)).distance(end) <= 1f ||
+                (hypot(current.x, end.x) <= 1f && hypot(current.z, end.z) <= 1f)) {
+                return (emptyList<Vector3f>() + start + reconstructPath(cameFrom, current) + end).toMutableList()
+            }
 
             openSet.remove(current)
 
@@ -159,6 +176,7 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
 
     private fun generateNeighbors(point: Vector3f): List<Vector3f> {
         val step = 1f
+        val height = SAFE_HEIGHT
         val directions = mutableListOf(
             Vector3f(step, 0f, 0f),    // вправо
             Vector3f(-step, 0f, 0f),   // влево
@@ -167,8 +185,36 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
             Vector3f(step, 0f, step),  // вправо-вперёд (диагональ)
             Vector3f(-step, 0f, step), // влево-вперёд (диагональ)
             Vector3f(step, 0f, -step), // вправо-назад (диагональ)
-            Vector3f(-step, 0f, -step) // влево-назад (диагональ)
+            Vector3f(-step, 0f, -step), // влево-назад (диагональ)
+
+            // вверх
+//            Vector3f(0f, 1f, 0f),    // вправо
+//            Vector3f(step, 1f, 0f),    // вправо
+//            Vector3f(-step, 1f, 0f),   // влево
+//            Vector3f(0f, 1f, step),    // вперёд
+//            Vector3f(0f, 1f, -step),   // назад
+//            Vector3f(step, 1f, step),  // вправо-вперёд (диагональ)
+//            Vector3f(-step, 1f, step), // влево-вперёд (диагональ)
+//            Vector3f(step, 1f, -step), // вправо-назад (диагональ)
+//            Vector3f(-step, 1f, -step), // влево-назад (диагональ)
+
         )
+        // вниз
+        if (point.y > step) {
+            directions.addAll(
+                listOf(
+//                    Vector3f(0f, -1f, 0f),    // вправо
+//                    Vector3f(step, -1f, 0f),    // вправо
+//                    Vector3f(-step, -1f, 0f),   // влево
+//                    Vector3f(0f, -1f, step),    // вперёд
+//                    Vector3f(0f, -1f, -step),   // назад
+//                    Vector3f(step, -1f, step),  // вправо-вперёд (диагональ)
+//                    Vector3f(-step, -1f, step), // влево-вперёд (диагональ)
+//                    Vector3f(step, -1f, -step), // вправо-назад (диагональ)
+//                    Vector3f(-step, -1f, -step), // влево-назад (диагональ)
+                )
+            )
+        }
 
         // Дополнительно: проверяем прямую видимость до всех безопасных вершин
 //        val st = System.currentTimeMillis()
@@ -179,7 +225,12 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
 //            }
 //        }
 //        println("time ${System.currentTimeMillis() - st}")
-        return directions.map { Vector3f(point).add(it) }
+        return directions.map {
+            Vector3f(point).add(it)
+        }
+//            .map { offset ->
+//            Vector3f(point.x + offset.x, height, point.z + offset.z)
+//        }
     }
 
     private fun isLineBlocked(from: Vector3f, to: Vector3f): Boolean {
@@ -203,24 +254,24 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         return a.distance(b).toDouble()
     }
 
-    private fun reconstructPath(cameFrom: Map<Vector3f, Vector3f?>, current: Vector3f): MutableList<Vector3f> {
+    private fun reconstructPath(cameFrom: Map<Vector3f, Vector3f?>, current: Vector3f): List<Vector3f> {
         val path = mutableListOf(current)
         var node = current
         while (cameFrom[node] != null) {
             node = cameFrom[node]!!
             path.add(0, node)
         }
-        return path
+        return path.map { it.add(Vector3f(0f, 10f, 0f)) }
     }
 
     private fun moveDrones() {
         for (drone in flyMap.drones) {
             if (drone.status == DroneStatus.CHARGING) {
                 // заряжаемся
-                viewModel.updateDrone(
+                updateDrone(
                     drone.copy(
                         status = if (drone.batteryLevel < 100) DroneStatus.CHARGING else DroneStatus.WAITING,
-                        batteryLevel = if (drone.batteryLevel < 100) drone.batteryLevel + 1 else 100,
+                        batteryLevel = if (drone.batteryLevel < 100) drone.batteryLevel + 1 else 100.0,
                     )
                 )
             } else {
@@ -231,21 +282,28 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
 
                     val updDrone = drone.copy(
                         currentPosition = target,
-                        currentWayPoint = drone.currentWayPoint.subList(1, drone.currentWayPoint.size)
-//                        batteryLevel = max(0, updDrone.batteryLevel - 1),
+                        currentWayPoint = drone.currentWayPoint.subList(1, drone.currentWayPoint.size),
+                        batteryLevel = drone.batteryLevel - getBatteryUsage(
+                            drone = drone,
+                            cargo = flyMap.getCargoByDroneId(drone.id),
+                            from = drone.currentPosition,
+                            to = target
+                        ),
                     )
 
-                    viewModel.updateDrone(updDrone)
+                    updateDrone(updDrone)
 
                 } else {
-                    if (drone.roadToCargoDestination.isNotEmpty() && drone.currentPosition.distance(drone.roadToCargoDestination.first()) <= 1) {
+                    if (drone.roadToCargoDestination.isNotEmpty() &&
+                        drone.currentPosition.distance(drone.roadToCargoDestination.first()) <= 1 ||
+                        (hypot(drone.currentPosition.x, drone.roadToCargoDestination.first().x) <= 1f && hypot(drone.currentPosition.z, drone.roadToCargoDestination.first().z) <= 1f)) {
                         // переходит на начало доставки
 
                         println("drone ${drone.id} start delivery")
 
                         val cargoInWork: Cargo? = flyMap.getCargoByDroneId(drone.id)
 
-                        viewModel.updateDrone(drone.copy(
+                        updateDrone(drone.copy(
                             currentWayPoint = drone.roadToCargoDestination,
                             roadToCargoStart = emptyList(),
                             status = DroneStatus.DELIVERING,
@@ -254,25 +312,28 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
                         ))
 
                         flyMap.getCargoByDroneId(drone.id)?.let {
-                            viewModel.updateCargo(it.copy(
+                            updateCargo(it.copy(
                                 status = CargoStatus.ON_ROAD
                             ))
                         }
 
                     }
-                    else if (drone.currentPosition.distance(drone.roadToCargoChargeStation.first()) <= 1 && drone.status == DroneStatus.DELIVERING) {
+                    else if (
+                        (drone.currentPosition.distance(drone.roadToCargoChargeStation.first()) <= 1 ||
+                                (hypot(drone.currentPosition.x, drone.roadToCargoChargeStation.first().x) <= 1f && hypot(drone.currentPosition.z, drone.roadToCargoChargeStation.first().z) <= 1f)) &&
+                        drone.status == DroneStatus.DELIVERING) {
 
                         println("drone ${drone.id} finish delivery, go to charging ${drone.roadToCargoChargeStation.toTypedArray().contentToString()}")
 
                         // на зарядку
-                        viewModel.updateDrone(drone.copy(
+                        updateDrone(drone.copy(
                             currentWayPoint = drone.roadToCargoChargeStation,
                             roadToCargoDestination = emptyList(),
                             status = DroneStatus.RETURNING,
                             cargos = emptyList(),
                         ))
                         drone.cargos.firstOrNull()?.let {
-                            viewModel.updateCargo(it.copy(
+                            updateCargo(it.copy(
                                 status = CargoStatus.DONE,
                                 droneId = -1
                             ))
@@ -281,7 +342,7 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
 
                         if (findNearestChargeStation(drone.currentPosition) == null) {
                             // нет зарядных станций
-                            viewModel.updateDrone(drone.copy(
+                            updateDrone(drone.copy(
                                 status = DroneStatus.WAITING,
                                 currentWayPoint = emptyList(),
                                 roadToCargoStart = emptyList(),
@@ -291,14 +352,15 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
                             ))
                         }
                     } else if (findNearestChargeStation(drone.currentPosition) != null &&
-                        drone.currentPosition.distance(findNearestChargeStation(drone.currentPosition)) <= 1 &&
+                        (drone.currentPosition.distance(findNearestChargeStation(drone.currentPosition)) <= 1 ||
+                                (hypot(drone.currentPosition.x, findNearestChargeStation(drone.currentPosition)!!.x) <= 1f && hypot(drone.currentPosition.z, findNearestChargeStation(drone.currentPosition)!!.z) <= 1f)) &&
                         drone.status == DroneStatus.RETURNING &&
                         drone.cargos.isEmpty()) {
 
                         println("drone ${drone.id} charging")
 
                         // заряжаемся
-                        viewModel.updateDrone(drone.copy(
+                        updateDrone(drone.copy(
                             status = DroneStatus.CHARGING,
                             currentWayPoint = emptyList(),
                             roadToCargoStart = emptyList(),
@@ -326,7 +388,7 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
         return a.distance(b)
     }
 
-    private fun estimateBatteryUsage(drone: Drone, route: List<Vector3f>, cargoWeight: Double): Int {
+    private fun estimateBatteryUsage(drone: Drone, route: List<Vector3f>, cargoWeight: Double): Double {
         var totalUsage = 0.0
         var last = drone.currentPosition
         for (point in route) {
@@ -335,7 +397,27 @@ class DroneRoutingManager(private val viewModel: CreatorViewModel) {
             totalUsage += segmentLength * weightFactor / 10.0
             last = point
         }
-        return totalUsage.roundToInt()
+        return totalUsage
+    }
+
+    private fun getBatteryUsage(drone: Drone, cargo: Cargo?, from: Vector3f, to: Vector3f): Double {
+        return distance(from, to) * (1 + ((cargo?.weight ?: 0.0) / drone.maxCargoCapacityMass)) / 10.0
+    }
+
+    fun updateDrone(drone: Drone) {
+        flyMap = flyMap.copy(
+            drones = flyMap.drones.map { d ->
+                if (d.id == drone.id) drone else d
+            }.toMutableList()
+        )
+    }
+
+    fun updateCargo(cargo: Cargo) {
+        flyMap = flyMap.copy(
+            cargos = flyMap.cargos.map { c ->
+                if (c.timeCreation == cargo.timeCreation) cargo else c
+            }.toMutableList()
+        )
     }
 
 }

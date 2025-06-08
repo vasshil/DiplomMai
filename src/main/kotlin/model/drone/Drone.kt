@@ -9,12 +9,13 @@ import model.cargo.Cargo
 import ui.compose.common.DRONE_BATTERY_LOW_COLOR
 import ui.compose.common.DRONE_BATTERY_NORMAL_COLOR
 import java.io.Serializable
+import kotlin.math.roundToInt
 
 @Immutable
 data class Drone(
     val id: Long,
     val status: DroneStatus = DroneStatus.WAITING,
-    val batteryLevel: Int = 100, // 0 - 100
+    val batteryLevel: Double = 100.0, // 0 - 100
     val maxCargoCapacityMass: Double, // кг, макс вместимость
     val cargos: List<Cargo> = mutableListOf(),
     val currentDestination: Vector3f? = null,
@@ -26,7 +27,7 @@ data class Drone(
 ): Serializable {
 
     fun getBatteryIcon() = if (status != DroneStatus.CHARGING) {
-        when (batteryLevel) {
+        when (batteryLevel.roundToInt()) {
             0 -> Icons.Rounded.Battery0Bar
             in 1..15 -> Icons.Rounded.Battery1Bar
             in 16..25 -> Icons.Rounded.Battery2Bar

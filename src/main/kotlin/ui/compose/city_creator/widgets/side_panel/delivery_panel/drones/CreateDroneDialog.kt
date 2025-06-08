@@ -16,7 +16,7 @@ fun CreateDroneDialog(
     onDismiss: () -> Unit,
     startPoint: DroneStartPoint.StartPointSelected
 ) {
-    var batteryLevel by remember { mutableStateOf(100f) }
+    var batteryLevel by remember { mutableStateOf(100.0) }
     var maxCargoCapacity by remember { mutableStateOf("") }
     var cargoError by remember { mutableStateOf(false) }
 
@@ -27,8 +27,8 @@ fun CreateDroneDialog(
             Column {
                 Text("Уровень заряда: ${batteryLevel.toInt()}%")
                 Slider(
-                    value = batteryLevel,
-                    onValueChange = { batteryLevel = it },
+                    value = batteryLevel.toFloat(),
+                    onValueChange = { batteryLevel = it.toDouble() },
                     valueRange = 0f..100f,
                     steps = 100,
                     colors = SliderDefaults.colors(
@@ -75,7 +75,7 @@ fun CreateDroneDialog(
                     onConfirm(
                         Drone(
                             id = newId,
-                            batteryLevel = batteryLevel.toInt(),
+                            batteryLevel = batteryLevel,
                             maxCargoCapacityMass = cargo,
                             currentPosition = startPoint.start
                         )

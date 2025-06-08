@@ -86,6 +86,8 @@ fun SchemeView(
         offset += offsetChange
     }
 
+    val openSet: List<Vector3f>? by viewModel.openSetFlow.collectAsState(null)
+
     // Состояния для хранения двух выбранных вершин
 //    var selectedVertex1 by remember { mutableStateOf<FlyMapVertex?>(null) }
 //    var selectedVertex2 by remember { mutableStateOf<FlyMapVertex?>(null) }
@@ -374,6 +376,34 @@ fun SchemeView(
                     }
                 }
             }
+
+            // open set
+
+            // маршрут сфокусированного дрона
+            openSet?.let {
+                println(it.toTypedArray().contentToString())
+                if (it.size < 2) return@let
+                try {
+                    for (i in 0 until it.lastIndex) {
+                        val from = it[i]
+                        val to = it[i + 1]
+                        val startX = from.x * scale + offset.x
+                        val startY = from.z * scale + offset.y
+                        val endX = to.x * scale + offset.x
+                        val endY = to.z * scale + offset.y
+
+                        drawLine(
+                            color = Color(191, 32, 146),
+                            start = Offset(startX, startY),
+                            end = Offset(endX, endY),
+                            strokeWidth = 4f,
+                        )
+
+                    }
+                } catch (_: Exception) {}
+
+            }
+
 
             // путь для груза в виде стрелки
             if (focusedCargoId != -1L) {

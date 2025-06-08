@@ -49,7 +49,7 @@ fun DroneItem(
                     )
 
                     Text(
-                        text = "${drone.batteryLevel}%",
+                        text = "${drone.batteryLevel.toInt()}%",
                         fontSize = 10.sp,
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 3.dp, bottom = 5.dp),
                         lineHeight = 12.sp

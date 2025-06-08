@@ -19,7 +19,11 @@ class CreatorViewModel {
 
     val flyMapFlow = MutableStateFlow(FlyMap())
 
-    val droneRoutingManager = DroneRoutingManager(this)
+    val openSetFlow = MutableStateFlow<List<Vector3f>?>(null)
+
+    val droneRoutingManager = DroneRoutingManager(this) {
+        scope.launch { openSetFlow.emit(it) }
+    }
 
     fun setCity(flyMap: FlyMap) {
         scope.launch {
@@ -197,20 +201,16 @@ class CreatorViewModel {
     }
 
 
-    fun updateDrone(drone: Drone) {
+    fun updateFlyMap(flyMap: FlyMap) {
+        flyMapFlow.value = flyMap
+    }
 
+    fun updateDrone(drone: Drone) {
         flyMapFlow.value = flyMapFlow.value.copy(
             drones = flyMapFlow.value.drones.map { d ->
                 if (d.id == drone.id) drone else d
             }.toMutableList()
         )
-//        flyMapFlow.update { flyMap ->
-//            flyMap.copy(
-//                drones = flyMap.drones.map { d ->
-//                    if (d.id == drone.id) drone else d
-//                }.toMutableList()
-//            )
-//        }
     }
 
     fun updateCargo(cargo: Cargo) {
@@ -219,13 +219,6 @@ class CreatorViewModel {
                 if (c.timeCreation == cargo.timeCreation) cargo else c
             }.toMutableList()
         )
-//        flyMapFlow.update { flyMap ->
-//            flyMap.copy(
-//                cargos = flyMap.cargos.map { c ->
-//                    if (c.timeCreation == cargo.timeCreation) cargo else c
-//                }.toMutableList()
-//            )
-//        }
     }
 
 }
