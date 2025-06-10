@@ -126,11 +126,12 @@ data class FlyMap(
                 try {
                     file.inputStream().use {
                         val fm = (ObjectInputStream(it).readObject() as FlyMap)
-                        fm.copy(
-                            buildings = fm.buildings.map { b ->
-                                b.copy(safeDistanceCoords = b.getKeyNodes())
-                            }
-                        )
+//                        fm.copy(
+//                            buildings = fm.buildings.map { b ->
+//                                b.copy(safeDistanceCoords = b.getKeyNodes())
+//                            }
+//                        )
+                        fm
                     }
                 } catch (e: Exception) {
                     println("read file error $e")

@@ -28,9 +28,9 @@ data class FlyMapVertex(
         return buildingId == other.buildingId && position == other.position && isChargeStation == other.isChargeStation
     }
 
-    override fun toString(): String {
-        return position.toString()
-    }
+//    override fun toString(): String {
+//        return position.toString()
+//    }
 
     fun toJTSCoordinate(): Coordinate {
         return Coordinate(position.x.toDouble(), position.z.toDouble())

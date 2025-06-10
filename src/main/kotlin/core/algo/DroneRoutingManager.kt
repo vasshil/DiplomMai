@@ -64,7 +64,7 @@ class DroneRoutingManager(
 
                 try {
                     moveDrones()
-                } catch (_: Exception) {}
+                } catch (e: Exception) { println(e.stackTraceToString()) }
                 viewModel.updateFlyMap(flyMap)
                 delay(50)
             }
@@ -295,8 +295,8 @@ class DroneRoutingManager(
 
                 } else {
                     if (drone.roadToCargoDestination.isNotEmpty() &&
-                        drone.currentPosition.distance(drone.roadToCargoDestination.first()) <= 1 ||
-                        (hypot(drone.currentPosition.x, drone.roadToCargoDestination.first().x) <= 1f && hypot(drone.currentPosition.z, drone.roadToCargoDestination.first().z) <= 1f)) {
+                        drone.currentPosition.distance(drone.roadToCargoDestination.firstOrNull()) <= 1 ||
+                        (hypot(drone.currentPosition.x, drone.roadToCargoDestination.firstOrNull()?.x ?: Float.POSITIVE_INFINITY) <= 1f && hypot(drone.currentPosition.z, drone.roadToCargoDestination.firstOrNull()?.z ?: Float.POSITIVE_INFINITY) <= 1f)) {
                         // переходит на начало доставки
 
                         println("drone ${drone.id} start delivery")
@@ -318,7 +318,7 @@ class DroneRoutingManager(
                         }
 
                     }
-                    else if (
+                    else if ( drone.roadToCargoChargeStation.isNotEmpty() &&
                         (drone.currentPosition.distance(drone.roadToCargoChargeStation.first()) <= 1 ||
                                 (hypot(drone.currentPosition.x, drone.roadToCargoChargeStation.first().x) <= 1f && hypot(drone.currentPosition.z, drone.roadToCargoChargeStation.first().z) <= 1f)) &&
                         drone.status == DroneStatus.DELIVERING) {

@@ -40,7 +40,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
     val flyMap by viewModel.flyMapFlow.collectAsState()
 
-//    println("collected fly map ${flyMap.buildings.toTypedArray().contentToString()}")
+//    println("collected fly map ${flyMap}")
 
     var schemeMode by remember { mutableStateOf(Scheme2DMode.VIEW) }
 
