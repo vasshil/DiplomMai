@@ -31,12 +31,14 @@ class DroneRoutingManager(
     private var routingJob: Job? = null
     private var isRunning = false
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
-    private val speed = 5f // условная скорость дрона (м/с)
     private val geometryFactory = GeometryFactory()
     private var obstacleIndex = STRtree()
 
+    private val droneHeights = mutableMapOf<Long, Float>()  // droneId -> height
+
     companion object {
-        private val SAFE_HEIGHT = 10f
+        private const val SAFE_HEIGHT = 10f
+        private const val HEIGHT_STEP = 2f
     }
 
     init {
@@ -115,9 +117,9 @@ class DroneRoutingManager(
 
             if (flyMap.getCargoByDroneId(drone.id)?.timeCreation == selectedCargo.timeCreation) continue
 
-            val pathToPickup = findPath(drone.currentPosition, selectedCargo.startVertex)
-            val pathToDropoff = findPath(selectedCargo.startVertex, selectedCargo.destination)
-            val pathToCharger = findPath(selectedCargo.destination, findNearestChargeStation(selectedCargo.destination) ?: selectedCargo.destination)
+            val pathToPickup = findPath(drone.currentPosition, selectedCargo.startVertex, drone.id)
+            val pathToDropoff = findPath(selectedCargo.startVertex, selectedCargo.destination, drone.id)
+            val pathToCharger = findPath(selectedCargo.destination, findNearestChargeStation(selectedCargo.destination) ?: selectedCargo.destination, drone.id)
 
             val totalPath = pathToPickup + pathToDropoff + pathToCharger
             val requiredBattery = estimateBatteryUsage(drone, totalPath, selectedCargo.weight)
@@ -141,7 +143,8 @@ class DroneRoutingManager(
         }
     }
 
-    private fun findPath(start: Vector3f, end: Vector3f): List<Vector3f> {
+    private fun findPath(start: Vector3f, end: Vector3f, droneId: Long): List<Vector3f> {
+        val height = droneHeights[droneId] ?: assignHeight(droneId)
         val openSet = mutableListOf(start)
         val cameFrom = mutableMapOf<Vector3f, Vector3f?>()
         val gScore = mutableMapOf(start to 0.0)
@@ -153,7 +156,7 @@ class DroneRoutingManager(
             val current = openSet.minByOrNull { fScore[it] ?: Double.POSITIVE_INFINITY } ?: break
             if (current.add(Vector3f(0f, 0f, 0f)).distance(end) <= 1f ||
                 (hypot(current.x, end.x) <= 1f && hypot(current.z, end.z) <= 1f)) {
-                return (emptyList<Vector3f>() + start + reconstructPath(cameFrom, current) + end).toMutableList()
+                return (emptyList<Vector3f>() + start + reconstructPath(cameFrom, current, height) + end).toMutableList()
             }
 
             openSet.remove(current)
@@ -200,9 +203,9 @@ class DroneRoutingManager(
 
         )
         // вниз
-        if (point.y > step) {
-            directions.addAll(
-                listOf(
+//        if (point.y > step) {
+//            directions.addAll(
+//                listOf(
 //                    Vector3f(0f, -1f, 0f),    // вправо
 //                    Vector3f(step, -1f, 0f),    // вправо
 //                    Vector3f(-step, -1f, 0f),   // влево
@@ -212,9 +215,9 @@ class DroneRoutingManager(
 //                    Vector3f(-step, -1f, step), // влево-вперёд (диагональ)
 //                    Vector3f(step, -1f, -step), // вправо-назад (диагональ)
 //                    Vector3f(-step, -1f, -step), // влево-назад (диагональ)
-                )
-            )
-        }
+//                )
+//            )
+//        }
 
         // Дополнительно: проверяем прямую видимость до всех безопасных вершин
 //        val st = System.currentTimeMillis()
@@ -254,14 +257,14 @@ class DroneRoutingManager(
         return a.distance(b).toDouble()
     }
 
-    private fun reconstructPath(cameFrom: Map<Vector3f, Vector3f?>, current: Vector3f): List<Vector3f> {
+    private fun reconstructPath(cameFrom: Map<Vector3f, Vector3f?>, current: Vector3f, height: Float): List<Vector3f> {
         val path = mutableListOf(current)
         var node = current
         while (cameFrom[node] != null) {
             node = cameFrom[node]!!
             path.add(0, node)
         }
-        return path.map { it.add(Vector3f(0f, 10f, 0f)) }
+        return path.map { it.add(Vector3f(0f, height, 0f)) }
     }
 
     private fun moveDrones() {
@@ -293,7 +296,8 @@ class DroneRoutingManager(
 
                     updateDrone(updDrone)
 
-                } else {
+                }
+                else {
                     if (drone.roadToCargoDestination.isNotEmpty() &&
                         drone.currentPosition.distance(drone.roadToCargoDestination.firstOrNull()) <= 1 ||
                         (hypot(drone.currentPosition.x, drone.roadToCargoDestination.firstOrNull()?.x ?: Float.POSITIVE_INFINITY) <= 1f && hypot(drone.currentPosition.z, drone.roadToCargoDestination.firstOrNull()?.z ?: Float.POSITIVE_INFINITY) <= 1f)) {
@@ -325,6 +329,8 @@ class DroneRoutingManager(
 
                         println("drone ${drone.id} finish delivery, go to charging ${drone.roadToCargoChargeStation.toTypedArray().contentToString()}")
 
+                        releaseHeight(drone.id)
+
                         // на зарядку
                         updateDrone(drone.copy(
                             currentWayPoint = drone.roadToCargoChargeStation,
@@ -351,7 +357,8 @@ class DroneRoutingManager(
                                 cargos = emptyList()
                             ))
                         }
-                    } else if (findNearestChargeStation(drone.currentPosition) != null &&
+                    }
+                    else if (findNearestChargeStation(drone.currentPosition) != null &&
                         (drone.currentPosition.distance(findNearestChargeStation(drone.currentPosition)) <= 1 ||
                                 (hypot(drone.currentPosition.x, findNearestChargeStation(drone.currentPosition)!!.x) <= 1f && hypot(drone.currentPosition.z, findNearestChargeStation(drone.currentPosition)!!.z) <= 1f)) &&
                         drone.status == DroneStatus.RETURNING &&
@@ -404,7 +411,7 @@ class DroneRoutingManager(
         return distance(from, to) * (1 + ((cargo?.weight ?: 0.0) / drone.maxCargoCapacityMass)) / 10.0
     }
 
-    fun updateDrone(drone: Drone) {
+    private fun updateDrone(drone: Drone) {
         flyMap = flyMap.copy(
             drones = flyMap.drones.map { d ->
                 if (d.id == drone.id) drone else d
@@ -412,7 +419,7 @@ class DroneRoutingManager(
         )
     }
 
-    fun updateCargo(cargo: Cargo) {
+    private fun updateCargo(cargo: Cargo) {
         flyMap = flyMap.copy(
             cargos = flyMap.cargos.map { c ->
                 if (c.timeCreation == cargo.timeCreation) cargo else c
@@ -420,4 +427,17 @@ class DroneRoutingManager(
         )
     }
 
+    private fun assignHeight(droneId: Long): Float {
+        var height = SAFE_HEIGHT
+        val occupied = droneHeights.values.toSet()
+        while (occupied.contains(height)) {
+            height += HEIGHT_STEP
+        }
+        droneHeights[droneId] = height
+        return height
+    }
+
+    private fun releaseHeight(droneId: Long) {
+        droneHeights.remove(droneId)
+    }
 }

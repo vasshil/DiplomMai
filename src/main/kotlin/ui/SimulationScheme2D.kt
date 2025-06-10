@@ -1,12 +1,14 @@
 package ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -42,11 +44,11 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
 //    println("collected fly map ${flyMap}")
 
-    var schemeMode by remember { mutableStateOf(Scheme2DMode.VIEW) }
+    var schemeMode by remember { mutableStateOf(Scheme2DMode.VIEW) } // режим схемы: редактор карты / симуляция
 
-    var simulationMode by remember { mutableStateOf(SimulationMode.PAUSE) }
+    var simulationMode by remember { mutableStateOf(SimulationMode.PAUSE) } // старт стоп симуляции
 
-    var editorMode by remember { mutableStateOf(CreatorModeEnum.NONE) }
+    var editorMode by remember { mutableStateOf(CreatorModeEnum.NONE) } // выбранное действие редактора карты
 
     var newBuildingId: Long? by remember { mutableStateOf(null) }
 
@@ -75,6 +77,20 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
 
         Column(
             modifier = Modifier
+//                .focusable(true)
+//                .onKeyEvent { keyEvent ->
+//                println(keyEvent)
+//                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Spacebar) {
+//                    println(simulationMode.name)
+//                    simulationMode = if (simulationMode == SimulationMode.PAUSE) SimulationMode.PLAY else SimulationMode.PAUSE
+//                    if (simulationMode == SimulationMode.PAUSE) viewModel.droneRoutingManager.stop() else viewModel.droneRoutingManager.start()
+//                    true
+//                } else {
+//                    false
+//                }
+//            }
+
+
         ) {
 
             TopBar(
