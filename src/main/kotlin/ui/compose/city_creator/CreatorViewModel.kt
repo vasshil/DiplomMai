@@ -2,16 +2,20 @@ package ui.compose.city_creator
 
 import com.jme3.math.Vector3f
 import core.algo.DroneRoutingManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import model.FlyMap
 import model.cargo.Cargo
 import model.drone.Drone
 import model.landscape.Building
 import model.landscape.NoFlyZone
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
+import java.net.ServerSocket
+import java.net.Socket
+import java.nio.ByteBuffer
 
 class CreatorViewModel {
 
@@ -25,7 +29,88 @@ class CreatorViewModel {
         scope.launch { openSetFlow.emit(it) }
     }
 
-    fun setCity(flyMap: FlyMap) {
+
+    private var sendSocket: Socket? = null
+
+    init {
+        scope.launch(Dispatchers.IO) {
+            val serverSocket = ServerSocket(12345)
+            while (true) {
+                println("Ожидание клиента...")
+                val client = serverSocket.accept()
+                println("Клиент подключился: ${client.inetAddress}")
+                scope.launch(Dispatchers.IO) {
+                    try {
+                        val out = client.getOutputStream()
+                        while (true) {
+                            val bytes = ByteArrayOutputStream().use { buf ->
+                                ObjectOutputStream(buf).use { oos -> oos.writeObject(flyMapFlow.value) }
+                                buf.toByteArray()
+                            }
+                            val len = bytes.size
+                            out.write(ByteBuffer.allocate(4).putInt(len).array()) // отправляем длину (4 байта)
+                            out.write(bytes) // отправляем объект
+                            out.flush()
+                            delay(200) // раз в секунду, например
+                        }
+                    } catch (e: Exception) {
+                        println("Клиент отключился: ${e.stackTraceToString()}")
+                    } finally {
+                        try { client.close() } catch (_: Exception) {}
+                    }
+                }
+            }
+
+            while (true) {
+
+//                try {
+//                    if (sendSocket == null || sendSocket?.isConnected != true) {
+//                        println("!!!!!!!!!!!!!!!! sendSocket == null ${sendSocket == null} / sendSocket?.isConnected $sendSocket?.isConnected")
+//                        sendSocket = ServerSocket(12345).accept()
+//                        println("connection accepted!! ${sendSocket}")
+//                    }
+//                } catch (e: Exception) {
+//                    println("open socket error: ${e.stackTraceToString()}")
+//                    try {
+//                        sendSocket?.close()
+//                        sendSocket = null
+//                    } catch (e: Exception) {}
+//                }
+//
+//                delay(1000)
+            }
+        }
+//        scope.launch(Dispatchers.IO) {
+//            flyMapFlow.collectLatest {
+//                withContext(Dispatchers.IO) {
+//                    try {
+//                        if (sendSocket != null) {
+//                            sendSocket?.getOutputStream()?.write(
+//                                ByteArrayOutputStream().use { buf ->
+//                                    ObjectOutputStream(buf).use { oos -> oos.writeObject(it) }
+//                                    buf.toByteArray()
+//                                }
+//                            )
+//                            println("send success!!")
+//                        } else {
+////                            throw Exception("open socket error")
+//                        }
+//
+//                    } catch (e: Exception) {
+//                        println("send err: ${e.stackTraceToString()}")
+//                        try {
+//                            sendSocket?.close()
+//                            sendSocket = null
+//                        } catch (e: Exception) {}
+//                    }
+//
+//                }
+//            }
+//        }
+    }
+
+
+    fun setFlyMap(flyMap: FlyMap) {
         scope.launch {
             flyMapFlow.emit(flyMap)
         }
@@ -219,6 +304,11 @@ class CreatorViewModel {
                 if (c.timeCreation == cargo.timeCreation) cargo else c
             }.toMutableList()
         )
+    }
+
+    fun destroy() {
+        scope.cancel()
+        sendSocket?.close()
     }
 
 }

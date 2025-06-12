@@ -285,7 +285,7 @@ class DroneRoutingManager(
 
                     val updDrone = drone.copy(
                         currentPosition = target,
-                        currentWayPoint = drone.currentWayPoint.subList(1, drone.currentWayPoint.size),
+                        currentWayPoint = drone.currentWayPoint.subList(1, drone.currentWayPoint.size).toList(),
                         batteryLevel = drone.batteryLevel - getBatteryUsage(
                             drone = drone,
                             cargo = flyMap.getCargoByDroneId(drone.id),

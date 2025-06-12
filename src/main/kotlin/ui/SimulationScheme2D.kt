@@ -1,15 +1,12 @@
 package ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.key.*
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
@@ -19,8 +16,6 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
 import model.FlyMap
-import model.landscape.Building
-import model.landscape.NoFlyZone
 import ui.compose.city_creator.widgets.side_panel.landscape.LandscapeList
 import ui.compose.city_creator.widgets.topbar.CreatorModeEnum
 import ui.compose.city_creator.CreatorViewModel
@@ -109,7 +104,7 @@ fun CityScheme2D(viewModel: CreatorViewModel) {
                         println("file read ${file?.path}")
                         file?.let {
                             FlyMap.loadFromFile(it.path)?.let { loadedCity ->
-                                viewModel.setCity(loadedCity)
+                                viewModel.setFlyMap(loadedCity)
                             } ?: kotlin.run {
                                 showWrongFileDialog = true
                             }
@@ -335,7 +330,10 @@ fun main() = application {
     val viewModel = CreatorViewModel()
 
     Window(
-        onCloseRequest = ::exitApplication,
+        onCloseRequest = {
+            viewModel.destroy()
+            this.exitApplication()
+        },
         state = WindowState(
             size = DpSize(1300.dp, 768.dp),
             position = WindowPosition(Alignment.Center),

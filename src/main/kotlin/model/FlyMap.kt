@@ -144,6 +144,19 @@ data class FlyMap(
 
         }
 
+        fun loadFromBytes(data: ByteArray): FlyMap? {
+            return try {
+                ByteArrayInputStream(data).use { byteStream ->
+                    ObjectInputStream(byteStream).use { objStream ->
+                        objStream.readObject() as? FlyMap
+                    }
+                }
+            } catch (e: Exception) {
+                println("read bytes error $e")
+                null
+            }
+        }
+
         private const val serialVersionUID: Long = 1L
     }
 

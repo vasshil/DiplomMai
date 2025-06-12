@@ -60,5 +60,11 @@ val CARGO_STATUS_ON_ROAD_COLOR = Color(177, 92, 22)
 val CARGO_STATUS_DONE_COLOR = Color(66, 137, 43)
 val CARGO_STATUS_ERROR_COLOR = Color(221, 17, 17)
 
+
+
+
+// 3d
+val GROUND_COLOR = Color(30, 87, 48).toColorRGBA()
+
 fun Color.toColorRGBA() = ColorRGBA(red, green, blue, alpha)
 fun Color.toColorRGBA(transparency: Float) = ColorRGBA(red, green, blue, transparency)

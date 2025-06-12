@@ -18,74 +18,173 @@ import com.jme3.scene.shape.Sphere
 import com.jme3.shadow.DirectionalLightShadowFilter
 import com.jme3.shadow.DirectionalLightShadowRenderer
 import com.jme3.system.AppSettings
+import com.jme3.ui.Picture
+import kotlinx.coroutines.*
+import kotlinx.io.IOException
 import model.FlyMap
-import model.graph.FlyMapEdgeEdge
-import model.graph.Graph3D
-import model.graph.FlyMapVertex
+import model.drone.Drone
 import model.landscape.Building
-import ui.compose.common.FOCUSED_BUILDING_COLOR
-import ui.compose.common.toColorRGBA
+import ui.compose.common.GROUND_COLOR
+import java.io.InputStream
+import java.net.Socket
+import java.nio.ByteBuffer
 
 
 class City1 : SimpleApplication() {
 
+    private val scope = CoroutineScope(Dispatchers.IO)
+    private var socket: Socket? = null
+
+    private val buildingGeoms = mutableListOf<Geometry>()
+    private val droneGeoms = mutableListOf<Geometry>()
+    private val dronePathNodes = mutableListOf<Node>()
+
+    private val droneIcons = mutableMapOf<Long, Picture>()
+
+    private val iconSize = 32f
+
+    var flyMap = FlyMap.loadFromFile("flyMap1.txt")
+
     override fun simpleInitApp() {
+
+        initSocket()
 
         val ground = initEnvironment()
 
-        val city = FlyMap.loadFromFile("flyMap1.txt") ?: return
-
         val buildingsGeometry = mutableListOf<Geometry>()
 
-        city.buildings.forEach {
+
+
+        flyMap?.buildings?.forEach {
             buildingsGeometry += displayBuilding(it)
         }
         buildingsGeometry += ground
 
-//        displayGraph(city.graph)
-
+        flyMap?.drones?.forEach { drone ->
+            displayDrone(drone)
+            displayDronePaths(drone)
+        }
 
         // Настраиваем камеру, чтобы она была сбоку сверху и смотрела на сцену
-//        cam.location = Vector3f(0f, 200f, 0f)
         cam.location = Vector3f(140f, 100f, 130f)
-//        cam.lookAt(Vector3f.ZERO, Vector3f.UNIT_Y)
         cam.lookAt(Vector3f(40f, 0f, 20f), Vector3f.UNIT_Y)
         flyCam.moveSpeed = 60f
 
 
     }
 
-    private fun displayPath(waypoints: List<Vector3f>) {
-        if (waypoints.size < 2) {
-            println("Недостаточно точек для отображения пути.")
-            return
+    private fun initSocket() {
+        fun InputStream.readFully(buffer: ByteArray) {
+            var read = 0
+            while (read < buffer.size) {
+                val r = this.read(buffer, read, buffer.size - read)
+                if (r == -1) throw IOException("End of stream")
+                read += r
+            }
+        }
+        scope.launch(Dispatchers.IO) {
+            while (true) {
+                try {
+                    println("Пробуем подключиться к серверу...")
+                    val socket = Socket("localhost", 12345)
+                    println("Подключено!")
+                    val inp = socket.getInputStream()
+                    while (true) {
+                        // 1. Читаем длину
+                        val lenBytes = ByteArray(4)
+                        inp.readFully(lenBytes)
+                        val len = ByteBuffer.wrap(lenBytes).int
+                        // 2. Читаем нужное количество байт
+                        val bytes = ByteArray(len)
+                        inp.readFully(bytes)
+                        // 3. Десериализуем объект
+                        val flyMap = FlyMap.loadFromBytes(bytes)
+                        println("get $lenBytes / $flyMap")
+                        if (flyMap != null) {
+                            enqueue {
+                                updateFlyMap(flyMap)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    println("Ошибка соединения: ${e.stackTraceToString()}")
+                    // Закрытие сокета если открыт
+                } finally {
+                    try { socket?.close() } catch (_: Exception) {}
+                    delay(2000) // Пауза перед повтором
+                }
+            }
+        }
+        scope.launch {
+
+//            while (true) {
+//                try {
+//                    if (socket != null && socket?.isConnected == true) {
+//                        val bytes = ByteArray(5000)
+//                        val r = socket?.getInputStream()?.read(bytes)
+//                        println(bytes.contentToString())
+//                        if (r == -1) {
+//                            // Сервер закрыл соединение
+//                            socket?.close()
+//                            socket = null
+//                            delay(1000)
+//                            continue
+//                        }
+//                        val newFlyMap = FlyMap.loadFromBytes(bytes)
+//                        if (newFlyMap != null) {
+//                            updateFlyMap(newFlyMap)
+//                        }
+//                    } else {
+//                        socket = Socket("localhost", 12345)
+//                        delay(1000)
+//                    }
+//                } catch (e: Exception) {
+//                    try {
+//                        println(e.stackTraceToString())
+//                        socket?.close()
+//                        socket = Socket("localhost", 12345)
+//                        delay(1000)
+//                    } catch (e: Exception) {}
+//
+//                }
+//
+//            }
+
+        }
+    }
+
+    fun updateFlyMap(newMap: FlyMap) {
+        val oldMap = flyMap
+
+        // Сравни списки зданий
+        val buildingsChanged = oldMap?.buildings != newMap.buildings
+        // Сравни списки дронов
+        val dronesChanged = oldMap?.drones != newMap.drones
+
+        // Перерисовывай здания, если список изменился
+        if (buildingsChanged) {
+            clearBuildings()
+            newMap.buildings.forEach { displayBuilding(it) }
         }
 
-        val pathNode: Node = Node("Path")
-
-        // Создаем линии между точками пути
-        for (i in 0 until waypoints.size - 1) {
-            val line = Line(waypoints[i], waypoints[i + 1])
-            line.lineWidth = 2f // Толщина линии
-
-            // Создаем геометрию линии
-            val lineGeom = Geometry("Line", line)
-            val mat = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")
-            mat.setColor("Color", ColorRGBA.Red) // Красный цвет
-            lineGeom.material = mat
-
-            pathNode.attachChild(lineGeom)
+        // Перерисовывай дроны, если список изменился
+        if (dronesChanged) {
+            clearDrones()
+            clearDroneIcons()
+            clearDronePaths() // удаляем старые маршруты
+            newMap.drones.forEach {
+                displayDrone(it)
+                displayDronePaths(it)
+            }
         }
 
-        // Добавляем путь к rootNode для отображения
-        rootNode.attachChild(pathNode)
+        // Сохраняй новое состояние
+        flyMap = newMap
     }
 
 
     private fun displayBuilding(b: Building): Geometry {
-        val baseSize = 1f//m
         val buildingMesh = b.getMesh3D()
-//        println(buildingMesh.)
 
         val building = Geometry("Building", buildingMesh)
 
@@ -93,33 +192,15 @@ class City1 : SimpleApplication() {
         val material = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
         material.setBoolean("UseMaterialColors", true)
         material.setColor("Ambient", ColorRGBA.Blue)
-        material.setColor("Diffuse", ColorRGBA(0f, 0f, 0.6f, 1f)) // основной цвет
+        material.setColor("Diffuse", ColorRGBA(0.1f, 0.2f, 0.8f, 1f)) // Глубокий синий
         material.setColor("Specular", ColorRGBA.White)  // блик
-        material.setFloat("Shininess", 4f)
+        material.setFloat("Shininess", 16f)
         material.additionalRenderState.faceCullMode = RenderState.FaceCullMode.Back  // рисуем только лицевые стороны
 
         building.material = material
-//        building.queueBucket = RenderQueue.Bucket.Transparent
 
         // Добавляем тени
         building.shadowMode = RenderQueue.ShadowMode.CastAndReceive
-
-        // Добавляем свет и тени
-        val light = DirectionalLight()
-        light.direction = Vector3f(-0.5f, -0.5f, -0.5f).normalizeLocal()
-        rootNode.addLight(light)
-
-        val ambient = AmbientLight()
-        ambient.color = ColorRGBA.White.mult(0.3f)
-        rootNode.addLight(ambient)
-
-        val shadowRenderer = DirectionalLightShadowRenderer(assetManager, 1024, 3)
-        shadowRenderer.light = light
-        viewPort.addProcessor(shadowRenderer)
-
-        // Добавляем фильтр для корректной работы прозрачности
-        val fpp = FilterPostProcessor(assetManager)
-        viewPort.addProcessor(fpp)
 
         rootNode.attachChild(building)
 
@@ -132,52 +213,117 @@ class City1 : SimpleApplication() {
         wireframeGeom.shadowMode = RenderQueue.ShadowMode.Off
         rootNode.attachChild(wireframeGeom)
 
+        buildingGeoms += building
         return building
     }
 
-
-
-
-    private fun displayGraph(graph: Graph3D) {
-        // Добавляем вершины (в виде сфер) и ребра (в виде линий) в сцену
-        graph.vertices.forEachIndexed { i, it ->
-            displayVertex(it, i)
-        }
-
-        graph.edges.forEach {
-            displayEdge(it)
-        }
-    }
-
-    private fun displayVertex(vertex: FlyMapVertex, index: Int) {
-        val sphere = Sphere(16, 16, 0.3f) // Радиус сферы 0.3
-        val vertexGeom = Geometry("Vertex_$index", sphere)
+    private fun displayDrone(drone: Drone) {
+        // Нарисуем дрона как маленькую сферу
+        val sphere = Sphere(16, 16, 0.6f)
+        val droneGeom = Geometry("Drone_${drone.id}", sphere)
         val mat = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
-        mat.setColor("Diffuse", ColorRGBA.Cyan)
+        mat.setBoolean("UseMaterialColors", true)
+        mat.setColor("Diffuse", ColorRGBA.Yellow)
         mat.setColor("Specular", ColorRGBA.White)
-        mat.setFloat("Shininess", 16f)
-        vertexGeom.material = mat
-        vertexGeom.localTranslation = vertex.position
-        rootNode.attachChild(vertexGeom)
+        mat.setFloat("Shininess", 32f)
+        droneGeom.material = mat
+
+        droneGeom.localTranslation = drone.currentPosition
+        rootNode.attachChild(droneGeom)
+
+        val droneIcon = Picture("DroneIcon")
+        droneIcon.setImage(assetManager, "icons/ic_drone_mini_w.png", true)
+        droneIcon.setWidth(iconSize)
+        droneIcon.setHeight(iconSize)
+        val p = cam.getScreenCoordinates(drone.currentPosition)
+        println("d ${drone.id} / $p")
+        droneIcon.setPosition(p.x, p.y) // В центре, для примера
+        guiNode.attachChild(droneIcon)
+
+        droneIcons[drone.id] = droneIcon
+
+        droneGeoms += droneGeom
+
     }
 
-    private fun displayEdge(edge: FlyMapEdgeEdge) {
-        val line = Line(edge.vertex1.position, edge.vertex2.position)
-        val edgeGeom = Geometry("Edge", line)
-        val mat = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")
-        mat.setColor("Color", ColorRGBA.Blue)
-        edgeGeom.material = mat
-        rootNode.attachChild(edgeGeom)
+    private fun displayDronePaths(drone: Drone) {
+        // Основной маршрут
+        if (drone.currentWayPoint.isNotEmpty()) {
+            displayPath(drone.currentWayPoint, ColorRGBA.Yellow)
+        }
+        // К грузу
+        if (drone.roadToCargoStart.isNotEmpty()) {
+            displayPath(drone.roadToCargoStart, ColorRGBA.Green)
+        }
+        // К месту назначения груза
+        if (drone.roadToCargoDestination.isNotEmpty()) {
+            displayPath(drone.roadToCargoDestination, ColorRGBA.Cyan)
+        }
+        // К станции зарядки
+        if (drone.roadToCargoChargeStation.isNotEmpty()) {
+            displayPath(drone.roadToCargoChargeStation, ColorRGBA.Orange)
+        }
     }
 
+    private fun displayPath(waypoints: List<Vector3f>, color: ColorRGBA = ColorRGBA.Red): Node? {
+        if (waypoints.size < 2) return null
+        val pathNode = Node("Path")
+        for (i in 0 until waypoints.size - 1) {
+            val line = Line(waypoints[i], waypoints[i + 1])
+            val lineGeom = Geometry("Line", line)
+            val mat = Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")
+            mat.setColor("Color", color)
+            lineGeom.material = mat
+            pathNode.attachChild(lineGeom)
+        }
+        rootNode.attachChild(pathNode)
+        dronePathNodes += pathNode
+        return pathNode
+    }
 
+    private fun clearBuildings() {
+        buildingGeoms.forEach { rootNode.detachChild(it) }
+        buildingGeoms.clear()
+    }
+
+    private fun clearDrones() {
+        droneGeoms.forEach { rootNode.detachChild(it) }
+        droneGeoms.clear()
+    }
+
+    fun clearDronePaths() {
+        dronePathNodes.forEach { rootNode.detachChild(it) }
+        dronePathNodes.clear()
+    }
+
+    fun clearDroneIcons() {
+        droneIcons.values.forEach { guiNode.detachChild(it) }
+        droneIcons.clear()
+    }
 
     override fun simpleUpdate(tpf: Float) {
-        //this method will be called every game tick and can be used to make updates
+        flyMap?.drones?.forEach { drone ->
+            val icon = droneIcons[drone.id] ?: return@forEach
+            val screenPos = cam.getScreenCoordinates(drone.currentPosition)
+            // jME координаты экрана: (0,0) — внизу слева, для Picture тоже!
+            icon.setPosition(screenPos.x - iconSize / 2, screenPos.y - iconSize / 2)
+            // Можно скрывать иконку, если дрон за камерой:
+//            icon. = screenPos.z > 0
+        }
     }
 
     override fun simpleRender(rm: RenderManager) {
         //add render code here (if any)
+    }
+
+    override fun destroy() {
+        super.destroy()
+        println("destroy")
+        scope.cancel()
+        try {
+            socket?.close()
+        } catch (_: Exception) {}
+
     }
 
     companion object {
@@ -187,8 +333,11 @@ class City1 : SimpleApplication() {
             app.isShowSettings = false //Settings dialog not supported on mac
 
             val settings = AppSettings(true)
-            settings.width = 1280
+            settings.width = 1080
             settings.height = 720
+            settings.centerWindow = false
+            settings.windowXPosition = 1700
+            settings.windowYPosition = 900
             settings.title = "City graph"
             app.setSettings(settings)
 
@@ -205,8 +354,8 @@ fun SimpleApplication.initEnvironment(): Geometry {
     val ground = Geometry("Ground", groundBox)
     val groundMat = Material(assetManager, "Common/MatDefs/Light/Lighting.j3md")
     groundMat.setBoolean("UseMaterialColors", true)
-    groundMat.setColor("Diffuse", ColorRGBA.LightGray)
-    groundMat.setColor("Specular", ColorRGBA.White)
+    groundMat.setColor("Diffuse", GROUND_COLOR.mult(0.8f))
+    groundMat.setColor("Specular", GROUND_COLOR)
     groundMat.setFloat("Shininess", 5f) // Отражающая способность
     ground.material = groundMat
     ground.setShadowMode(RenderQueue.ShadowMode.Receive)
@@ -224,11 +373,11 @@ fun SimpleApplication.initEnvironment(): Geometry {
 
     // Добавляем фоновое освещение, чтобы не было слишком темно
     val ambient = AmbientLight()
-    ambient.color = ColorRGBA.White
+    ambient.color = ColorRGBA.White.mult(0.7f) // Было 0.3, теперь 0.7 или даже 1.0
     rootNode.addLight(ambient)
 
     // Устанавливаем фон сцены цвета неба
-    viewPort.backgroundColor = ColorRGBA(0.5f, 0.7f, 1.0f, 0.5f)
+    viewPort.backgroundColor = ColorRGBA(0.5f, 0.7f, 1.0f, 1.0f)
 
     return ground
 }
