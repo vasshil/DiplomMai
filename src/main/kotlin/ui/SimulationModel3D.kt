@@ -36,6 +36,7 @@ class City1 : SimpleApplication() {
     private var socket: Socket? = null
 
     private val buildingGeoms = mutableListOf<Geometry>()
+    private val buildingMeshes = mutableListOf<Geometry>()
     private val droneGeoms = mutableListOf<Geometry>()
     private val dronePathNodes = mutableListOf<Node>()
 
@@ -213,6 +214,8 @@ class City1 : SimpleApplication() {
         wireframeGeom.shadowMode = RenderQueue.ShadowMode.Off
         rootNode.attachChild(wireframeGeom)
 
+        buildingMeshes += wireframeGeom
+
         buildingGeoms += building
         return building
     }
@@ -284,6 +287,8 @@ class City1 : SimpleApplication() {
     private fun clearBuildings() {
         buildingGeoms.forEach { rootNode.detachChild(it) }
         buildingGeoms.clear()
+        buildingMeshes.forEach { rootNode.detachChild(it) }
+        buildingMeshes.clear()
     }
 
     private fun clearDrones() {
@@ -333,11 +338,11 @@ class City1 : SimpleApplication() {
             app.isShowSettings = false //Settings dialog not supported on mac
 
             val settings = AppSettings(true)
-            settings.width = 1080
-            settings.height = 720
+            settings.width = 800
+            settings.height = 970
             settings.centerWindow = false
             settings.windowXPosition = 1700
-            settings.windowYPosition = 900
+            settings.windowYPosition = 0
             settings.title = "City graph"
             app.setSettings(settings)
 

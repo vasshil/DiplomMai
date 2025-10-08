@@ -64,11 +64,14 @@ class DroneRoutingManager(
                     routeDrones()
                 }
 
-                try {
-                    moveDrones()
-                } catch (e: Exception) { println(e.stackTraceToString()) }
+                launch {
+                    try {
+                        moveDrones()
+                    } catch (e: Exception) { println(e.stackTraceToString()) }
+                }
+
                 viewModel.updateFlyMap(flyMap)
-                delay(50)
+                delay(10)
             }
         }
     }
@@ -105,9 +108,9 @@ class DroneRoutingManager(
             (it.status == DroneStatus.WAITING || it.status == DroneStatus.CHARGING) &&
                     it.batteryLevel > 20 &&
                     it.currentWayPoint.isEmpty() }
-        val availableCargos = flyMap.cargos.filter { it.status == CargoStatus.WAITING }
 
         for (drone in availableDrones) {
+            val availableCargos = flyMap.cargos.filter { it.status == CargoStatus.WAITING }
             val suitableCargos = availableCargos.filter { it.weight <= drone.maxCargoCapacityMass }
             if (suitableCargos.isEmpty()) continue
 
@@ -139,6 +142,7 @@ class DroneRoutingManager(
 
                 updateDrone(updDrone)
                 updateCargo(updCargo)
+
             }
         }
     }
